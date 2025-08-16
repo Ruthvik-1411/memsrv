@@ -1,0 +1,10 @@
+[project]
+name = "memsrv"
+version = "0.1.0"
+description = "A simple, self-hosted memory service boilerplate for LLMs and agent frameworks."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "google-adk>=1.11.0",
+    "streamlit>=1.48.1",
+]
