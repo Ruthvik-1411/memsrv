@@ -30,7 +30,11 @@ MANIFEST
 memory_db/
 *.db
 *.sqlite
+chroma_db
 
+# scratch files
+scratchpad
+test.py
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
