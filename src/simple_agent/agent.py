@@ -2,7 +2,7 @@
 from google.adk.agents import Agent
 
 from simple_agent.tools import get_current_time, calculate_expression
-# from simple_agent.memory_test import CustomMemoryTool
+from simple_agent.memory_test import CustomMemoryTool
 
 from dotenv import load_dotenv
 # To load the google api keys
@@ -18,6 +18,6 @@ root_agent = Agent(
    use the appropriate tools to get the answer the user query.""",
    tools=[get_current_time,
           calculate_expression,
-         #  CustomMemoryTool(name="memory_tool", description="preload_memory")
+          CustomMemoryTool(name="memory_tool", description="preload_memory")
    ]
 )

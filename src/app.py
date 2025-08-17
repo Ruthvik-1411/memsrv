@@ -4,6 +4,7 @@ import uuid
 import asyncio
 import streamlit as st
 from simple_agent.response_manager import ResponseManager
+from simple_agent.memory_client import MemoryClient
 
 # --- Page Configuration ---
 st.set_page_config(page_title="Agent Response Manager", layout="wide")
@@ -11,6 +12,8 @@ st.set_page_config(page_title="Agent Response Manager", layout="wide")
 # --- Session State Initialization ---
 if "response_manager" not in st.session_state:
     st.session_state.response_manager = ResponseManager()
+if "memory_client" not in st.session_state:
+    st.session_state.memory_client = MemoryClient()
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
     st.toast(f"New session created: {st.session_state.session_id}")
@@ -23,7 +26,17 @@ with st.sidebar:
     st.markdown(f"**Session ID:**\n`{st.session_state.session_id}`")
 
     if st.button("New Session"):
-        completed_session = asyncio.run(st.session_state.response_manager.dump_session_events(st.session_state.session_id))
+        completed_session_events = asyncio.run(st.session_state.response_manager.dump_session_events(st.session_state.session_id))
+        st.toast("Adding session to memory...")
+        st.session_state.memory_client.add_to_memory(
+            messages=completed_session_events,
+            metadata={
+                "user_id": "ruths@gmail.com",
+                "app_id": "simple_agent",
+                "session_id": st.session_state.session_id,
+                "agent_name": "local_adk_agent"
+        })
+        st.toast(f"Successfully added {st.session_state.session_id} to memories. Memories updated.")
         st.session_state.session_id = str(uuid.uuid4())
         st.session_state.messages = []
         st.toast(f"New session started: {st.session_state.session_id}")
