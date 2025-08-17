@@ -1,1 +1,0 @@
-"""Abstract class to add, query to vector DB"""
