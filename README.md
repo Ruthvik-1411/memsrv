@@ -4,13 +4,13 @@ A simple, self-hosted memory service boilerplate for LLMs and agent frameworks.
 (Refined my milestones using Gemini)
 ### **Project Milestones**
 
-#### **Milestone 1: Foundational Fact Pipeline**
+#### **Milestone 1: Foundational Fact Pipeline** ✅
 *Objective: Establish the core, non-vector pipeline for extracting facts from conversations and storing them with associated metadata.*
 
--   [ ] **Parse & Store Session Data:** Develop a function to process conversation histories (events/messages) into a structured dictionary or JSON format.
--   [ ] **Fact Extraction Prompting:** Write a robust prompt using the `google-genai` library to accurately extract key facts from the conversation data.
--   [ ] **Initial Vector DB Integration:** Set up a `ChromaDB` instance and implement code to add the generated facts along with their metadata (e.g., `user_id`, `session_id`). Embeddings will be ignored at this stage.
--   [ ] **Metadata-Based Retrieval:** Create a service function to fetch stored facts from ChromaDB using only metadata filters.
+-   [x] **Parse & Store Session Data:** Develop a function to process conversation histories (events/messages) into a structured dictionary or JSON format.
+-   [x] **Fact Extraction Prompting:** Write a robust prompt using the `google-genai` library to accurately extract key facts from the conversation data.
+-   [x] **Initial Vector DB Integration:** Set up a `ChromaDB` instance and implement code to add the generated facts along with their metadata (e.g., `user_id`, `session_id`). Embeddings will be ignored at this stage.
+-   [x] **Metadata-Based Retrieval:** Create a service function to fetch stored facts from ChromaDB using only metadata filters.
 
 #### **Milestone 2: Introducing Semantic Search**
 *Objective: Integrate vector embeddings to enable semantic retrieval and expose the core functionality via a web API.*
