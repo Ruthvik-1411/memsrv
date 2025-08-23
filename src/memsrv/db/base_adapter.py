@@ -1,6 +1,7 @@
 """Abstract class to add, query to vector DB"""
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
+from memsrv.models.memory import DBMemoryItem
 
 class VectorDBAdapter(ABC):
     """Abstract interface for any vector DB provider."""
@@ -12,16 +13,16 @@ class VectorDBAdapter(ABC):
         pass
 
     @abstractmethod
-    def add(self, collection_name: str, items: List[Dict[str, Any]]):
+    def add(self, collection_name: str, items: List[DBMemoryItem]):
         """Add items (facts + metadata) into a collection."""
         pass
     
     @abstractmethod
-    def query_items(self, collection_name: str, filters: Dict[str, Any], limit: int = 5):
+    def query_by_filter(self, collection_name: str, filters: Dict[str, Any], limit: int = 5):
         """Query items by filters"""
         pass
 
     @abstractmethod
-    def query_similar_items(self, collection_name: str, query_text: str, filters: Optional[Dict[str, Any]] = None, top_k: int = 20):
+    def query_by_similarity(self, collection_name: str, query_embedding: List[float],  query_text: Optional[str] = None, filters: Optional[Dict[str, Any]] = None, top_k: int = 20):
         """Query items by text with optional filters."""
         pass
