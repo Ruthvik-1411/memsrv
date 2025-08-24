@@ -32,10 +32,10 @@ A simple, self-hosted memory service boilerplate for LLMs and agent frameworks.
 -   [x] **Create a Database Adapter Interface:** Refactor the database-specific code (ChromaDB) to sit behind a generic `VectorDBAdapter` interface. This will make the core service agnostic to the underlying vector database.
 -   [x] **Abstract LLM/Embedding Logic:** Refactor the `google-genai` specific code to sit behind a generic `LLMProvider` interface, preparing for future support of other models and libraries like LangChain.
 
-#### **Milestone 5: Demonstrating Modularity**
+#### **Milestone 5: Demonstrating Modularity**✅
 *Objective: Prove the success of the new pluggable architecture by adding support for a second database.*
 
--   [ ] **Implement a Second DB Adapter:** Build a new adapter for a different vector database, such as **Postgres with pgvector**, by implementing the `VectorDBAdapter` interface created in the previous milestone.
+-   [x] **Implement a Second DB Adapter:** Build a new adapter for a different vector database, such as **Postgres with pgvector**, by implementing the `VectorDBAdapter` interface created in the previous milestone.
 -   [x] **Enable DB Switching:** Add configuration management to allow the service to easily switch between ChromaDB and Postgres at startup.
 
 #### **Milestone 6: Future Exploration - Multimodality**
