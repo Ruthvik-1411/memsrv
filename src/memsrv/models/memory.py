@@ -23,7 +23,7 @@ class MemoryItem(BaseModel):
     fact_id: str
     fact: str
     metadata: Dict[str, Any]
-    similarity: Optional[float]
+    similarity: Optional[float] = 0.0
 
 class GetMemoriesResponseModel(BaseModel):
     facts: List[MemoryItem]
