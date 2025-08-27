@@ -70,10 +70,10 @@ Key features:
 ### Running the Server
 
 To start the API server, use the following command:
-    ```bash
-    cd src
-    python server.py or uv run server.py
-    ```
+```bash
+cd src
+python server.py or uv run server.py
+```
 This will start the server at `http://0.0.0.0:8090`.
 
 ### Interacting with the API
