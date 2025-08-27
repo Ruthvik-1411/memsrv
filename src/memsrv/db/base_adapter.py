@@ -8,15 +8,25 @@ class VectorDBAdapter(ABC):
     # Format filters might not always be required, but we'll see
     
     @abstractmethod
-    def create_collection(self, name: str, metadata: Dict[str, Any] = None):
+    def create_collection(self, name: str = "memories", metadata: Optional[Dict[str, Any]] = None):
         """Create a new collection (or get it if exists)."""
         pass
 
     @abstractmethod
-    def add(self, collection_name: str, items: List[DBMemoryItem]):
+    def add(self, collection_name: str, items: List[DBMemoryItem]) -> List[str]:
         """Add items (facts + metadata) into a collection."""
         pass
     
+    @abstractmethod
+    def update(self, collection_name: str, items: List[DBMemoryItem]):
+        """Updates items at given with new data, fact_id should be provided"""
+        pass
+
+    @abstractmethod
+    def delete(self, collection_name: str, fact_ids: List[str]):
+        """Deletes items with provided id"""
+        pass
+
     @abstractmethod
     def query_by_filter(self, collection_name: str, filters: Dict[str, Any], limit: int = 5):
         """Query items by filters"""
