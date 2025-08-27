@@ -10,6 +10,7 @@ from memsrv.models.memory import DBMemoryItem
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# TODO: Refactor for SQL Injection vulnerability
 class PostgresDBAdapter(VectorDBAdapter):
     """Implements the DB adapter for postgres database using sql alchemy"""
     def __init__(self, connection_string: Optional[str] = None):
@@ -39,8 +40,17 @@ class PostgresDBAdapter(VectorDBAdapter):
         if name not in self._collections_cache:
             self.create_collection(name)
             self._collections_cache.add(name)
+    
+    def _format_filters(self, filters: Dict[str, Any] = None ) -> str:
+        """Formats filter dict to sql where statements"""
+        if filters:
+            where_clauses = [f"{key} = :{key}" for key in filters]
+            where_sql = "WHERE " + " AND ".join(where_clauses)
 
-    def create_collection(self, name: str, metadata: Optional[Dict[str, Any]] = None):
+            return where_sql
+        return ""
+
+    def create_collection(self, name, metadata=None):
         """
         Creates a new table for memories and an IVFFlat index for fast vector search.
         This method is idempotent and uses a transaction.
@@ -97,7 +107,7 @@ class PostgresDBAdapter(VectorDBAdapter):
                 else:
                     raise ValueError(e)
 
-    def add(self, collection_name: str, items: List[DBMemoryItem]):
+    def add(self, collection_name, items):
         """Adds a list of memory items using a single transactional bulk insert."""
         if not items:
             return
@@ -134,18 +144,24 @@ class PostgresDBAdapter(VectorDBAdapter):
             conn.execute(insert_stmt, data_to_insert)
         
         logger.info(f"Successfully added/updated {len(items)} items in collection '{collection_name}'.")
+        return [item.id for item in items]
+    
+    def update(self, collection_name, fact_id, items):
+        raise ValueError("Update for postgres is still in progress")
+    
+    def delete(self, collection_name, fact_id):
+        raise ValueError("Delete for postgres is still in progress")
 
-    def query_by_filter(self, collection_name: str, filters: Dict[str, Any], limit: int = 20):
+    def query_by_filter(self, collection_name, filters, limit):
         """Queries memories from a collection using metadata filters."""
         params = {"limit": limit}
         params.update(filters)
         
-        where_clauses = [f"{key} = :{key}" for key in filters]
-        where_sql = " AND ".join(where_clauses)
+        where_sql = self._format_filters(filters=filters)
         
         query_str = f"SELECT fact_id, fact, user_id, app_id, session_id, agent_name, created_at FROM {collection_name}"
         if where_sql:
-            query_str += f" WHERE {where_sql}"
+            query_str += where_sql
         query_str += " ORDER BY created_at DESC LIMIT :limit;"
         
         query = text(query_str)
@@ -164,27 +180,18 @@ class PostgresDBAdapter(VectorDBAdapter):
         logger.info(results)
         return results
 
-    def query_by_similarity(
-        self, collection_name: str, query_embedding: List[float], query_text: Optional[str] = None,
-        filters: Optional[Dict[str, Any]] = None, top_k: int = 20
-    ):
+    def query_by_similarity(self, collection_name, query_embedding, query_text=None, filters=None, top_k=20):
         """Performs similarity search, converting cosine distance to a similarity score."""
         params = {"embedding": str(query_embedding), "top_k": top_k}
+        params.update(filters)
         
-        where_sql = ""
-        if filters:
-            where_clauses = [f"{key} = :{key}" for key in filters]
-            where_sql = "WHERE " + " AND ".join(where_clauses)
-            params.update(filters)
-
-        query = text(f"""
-            SELECT fact_id, fact, user_id, app_id, session_id, agent_name, created_at,
-                    1 - (embedding <=> :embedding) AS similarity
-            FROM {collection_name}
-            {where_sql}
-            ORDER BY similarity DESC
-            LIMIT :top_k;
-        """)
+        where_sql = self._format_filters(filters=filters)
+        query_str = f"SELECT fact_id, fact, user_id, app_id, session_id, agent_name, created_at, 1 - (embedding <=> :embedding) AS similarity FROM {collection_name} "
+        if where_sql:
+            query_str += where_sql
+        query_str += " ORDER BY similarity DESC LIMIT :top_k;"
+        
+        query = text(query_str)
 
         results = {"ids": [], "documents": [], "metadatas": [], "distances": []}
         with self.engine.connect() as conn:

@@ -1,7 +1,7 @@
 """data models for facts, memories and api services will be added here"""
 import uuid
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Literal
 
 # TODO: add timestamps as well
 
@@ -25,5 +25,30 @@ class MemoryItem(BaseModel):
     metadata: Dict[str, Any]
     similarity: Optional[float] = 0.0
 
+class MemoryCreateItem(BaseModel):
+    facts: List[str]
+    metadata: MemoryMetadata
+
+class MemoryUpdateItem(BaseModel):
+    id: str
+    document: str
+    metadata: MemoryMetadata
+
 class GetMemoriesResponseModel(BaseModel):
-    facts: List[MemoryItem]
+    memories: List[MemoryItem]
+
+class MemoryResponseData(BaseModel):
+    id: str
+    content: Optional[str]
+
+class MemoryActionResponse(BaseModel):
+    memory: MemoryResponseData
+    action: Literal["CREATED", "UPDATED", "DELETED"]
+
+class AddMemoriesResponseModel(BaseModel):
+    message: str
+    info: List[MemoryActionResponse]
+
+class DeleteMemoriesResponseModel(BaseModel):
+    message: str
+    info: List[MemoryActionResponse]

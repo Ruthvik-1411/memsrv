@@ -9,19 +9,13 @@ from memsrv.api.routes import memory
 
 from memsrv.core.memory_service import MemoryService
 from memsrv.llms.providers.gemini import GeminiModel
-from memsrv.db.adapters.chroma import ChromaDBAdapter
-from memsrv.db.adapters.postgres import PostgresDBAdapter
 from memsrv.embeddings.providers.gemini import GeminiEmbedding
 from memsrv.llms.base_config import BaseLLMConfig
+from config import LLM_SERVICE, DB_SERVICE, EMBEDDING_SERVICE, CONNECTION_STRING
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-LLM_SERVICE = "gemini"
-# DB_SERVICE = "chroma"
-DB_SERVICE = "postgres"
-EMBEDDING_SERVICE = "gemini"
 
 def get_llm_instance():
     if LLM_SERVICE == "gemini":
@@ -31,14 +25,11 @@ def get_llm_instance():
 
 def get_db_instance():
     if DB_SERVICE == "chroma":
+        from memsrv.db.adapters.chroma import ChromaDBAdapter
         return ChromaDBAdapter(persist_dir="./chroma_db")
     elif DB_SERVICE == "postgres":
-        db_user = os.getenv("DATABASE_USER")
-        db_pswd = os.getenv("DATABASE_PASSWORD")
-        db_name = os.getenv("DATABASE_NAME")
-        db_url = f"postgresql+pg8000://{db_user}:{db_pswd}@127.0.0.1:5432/{db_name}"
-        logger.info(db_url)
-        return PostgresDBAdapter(connection_string=db_url)
+        from memsrv.db.adapters.postgres import PostgresDBAdapter
+        return PostgresDBAdapter(connection_string=CONNECTION_STRING)
     raise ValueError(f"Unsupported DB provider: {DB_SERVICE}")
 
 def get_embedding_instance():
