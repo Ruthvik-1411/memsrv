@@ -1,8 +1,8 @@
 """Core module for agent orchestration"""
 from google.adk.agents import Agent
 
-from simple_agent.tools import get_current_time, calculate_expression
-from simple_agent.memory_test import CustomMemoryTool
+from adk_agent.tools import get_current_time, calculate_expression
+from adk_agent.memory_test import CustomMemoryTool
 
 from dotenv import load_dotenv
 # To load the google api keys

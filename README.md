@@ -22,7 +22,7 @@ A simple, self-hosted memory service boilerplate for LLMs and agent frameworks.
 #### **Milestone 3: Advanced Memory Management**
 *Objective: Implement a strategy for handling memory updates and make the service more interactive.*
 
--   [ ] **Expose CRUD as Tools:** Enhance the API to expose full Create, Read, Update, and Delete (CRUD) operations, making them usable as "tools" by an AI agent.
+-   [x] **Expose CRUD as Tools:** Enhance the API to expose full Create, Read, Update, and Delete (CRUD) operations, making them usable as "tools" by an AI agent.
 -   [ ] **Develop Memory Update Strategy:** Design and implement a baseline mechanism for updating memories. This will handle cases where new information contradicts or refines existing facts (e.g., implementing an "rewriting using LLM" or "append and retrieve latest" logic).
 
 #### **Milestone 4: Refactoring for Extensibility**
