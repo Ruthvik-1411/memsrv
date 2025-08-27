@@ -1,45 +1,142 @@
 # memsrv
+
 A simple, self-hosted memory service boilerplate for LLMs and agent frameworks.
 
-(Refined my milestones using Gemini)
-### **Project Milestones**
+## Overview
 
-#### **Milestone 1: Foundational Fact Pipeline** ✅
-*Objective: Establish the core, non-vector pipeline for extracting facts from conversations and storing them with associated metadata.*
+`memsrv` provides a streamlined solution for managing long term memory for your LLM and agentic applications. It allows you to extract, store, and retrieve factual information from conversations, leveraging vector embeddings for semantic search. The service is designed to be modular and extensible, supporting multiple vector database backends and LLM providers.
 
--   [x] **Parse & Store Session Data:** Develop a function to process conversation histories (events/messages) into a structured dictionary or JSON format.
--   [x] **Fact Extraction Prompting:** Write a robust prompt using the `google-genai` library to accurately extract key facts from the conversation data.
--   [x] **Initial Vector DB Integration:** Set up a `ChromaDB` instance and implement code to add the generated facts along with their metadata (e.g., `user_id`, `session_id`). Embeddings will be ignored at this stage.
--   [x] **Metadata-Based Retrieval:** Create a service function to fetch stored facts from ChromaDB using only metadata filters.
+Key features:
 
-#### **Milestone 2: Introducing Semantic Search** ✅
-*Objective: Integrate vector embeddings to enable semantic retrieval and expose the core functionality via a web API.*
+*   **Fact Extraction:** Automatically extracts key facts from conversation histories.
+*   **Semantic Search:** Uses vector embeddings to enable semantic retrieval of memories based on similarity to a query.
+*   **Metadata Filtering:** Supports filtering memories based on metadata such as user ID, session ID, and application ID.
+*   **Multiple Database Support:** Pluggable architecture supports different vector databases, such as ChromaDB and Postgres with pgvector.
+*   **REST API:** Exposes core memory services through a REST API for easy integration with other applications.
+*   **CRUD Operations:** Supports Create, Read, Update, and Delete operations for memory management.
 
--   [x] **Generate & Store Embeddings:** Enhance the fact creation process to generate vector embeddings for each fact using `google-genai` and store them in ChromaDB.
--   [x] **Implement Similarity Search:** Develop the logic to retrieve memories based on a combination of semantic query similarity and metadata filtering.
--   [x] **Expose via API:** Create a basic `FastAPI` application to expose the core memory services (add, metadata query, semantic query) as REST endpoints.
+> Note: This project is still in development. For status, milestones and next steps of this project refer [Project Milestones](./Milestones.md).
+## Getting Started
 
-#### **Milestone 3: Advanced Memory Management**
-*Objective: Implement a strategy for handling memory updates and make the service more interactive.*
+### Prerequisites
 
--   [x] **Expose CRUD as Tools:** Enhance the API to expose full Create, Read, Update, and Delete (CRUD) operations, making them usable as "tools" by an AI agent.
--   [ ] **Develop Memory Update Strategy:** Design and implement a baseline mechanism for updating memories. This will handle cases where new information contradicts or refines existing facts (e.g., implementing an "rewriting using LLM" or "append and retrieve latest" logic).
+*   Python 3.12+
+*   uv for dependency management ([uv docs](https://pypi.org/project/uv/))
+*   LLM Provider API key for generating content and embeddings.
+    - Gemini has a pretty generous limits on their free tier.
 
-#### **Milestone 4: Refactoring for Extensibility**
-*Objective: Optimize the existing code and refactor it into a modular, pluggable architecture to support multiple backends.*
+### Installation
 
--   [ ] **Optimize Core Services:** Review and optimize the performance of the fact generation and memory update pipelines.
--   [x] **Create a Database Adapter Interface:** Refactor the database-specific code (ChromaDB) to sit behind a generic `VectorDBAdapter` interface. This will make the core service agnostic to the underlying vector database.
--   [x] **Abstract LLM/Embedding Logic:** Refactor the `google-genai` specific code to sit behind a generic `LLMProvider` interface, preparing for future support of other models and libraries like LangChain.
+1.  Clone the repository:
 
-#### **Milestone 5: Demonstrating Modularity**✅
-*Objective: Prove the success of the new pluggable architecture by adding support for a second database.*
+    ```bash
+    git clone https://github.com/Ruthvik-1411/memsrv.git
+    cd memsrv
+    ```
 
--   [x] **Implement a Second DB Adapter:** Build a new adapter for a different vector database, such as **Postgres with pgvector**, by implementing the `VectorDBAdapter` interface created in the previous milestone.
--   [x] **Enable DB Switching:** Add configuration management to allow the service to easily switch between ChromaDB and Postgres at startup.
+2.  Install dependencies using uv:
 
-#### **Milestone 6: Future Exploration - Multimodality**
-*Objective: Scope the work required to expand the service beyond text-only conversations.*
+    ```bash
+    # If you don't have uv installed
+    pip install uv
 
--   [ ] **Research & Design for Multimodality:** Investigate the requirements for handling multimodal memories (e.g., storing image data alongside text).
--   [ ] **Prototype Multimodal Similarity:** Explore and test multimodal embedding models to understand how similarity matching would work across different data types.
+    # Create a venv using uv
+    uv venv
+
+    # Activate your venv
+    source venv/bin/activate or venv\Scripts\activate
+
+    # Install the packages
+    uv sync
+    ```
+
+3.  Set up your environment variables:
+
+    *   Create a `.env` file in the src folder. Refer env.example for more info.
+    *   Add your Google/LLM API key(support for more providers is in progress):
+        ```bash
+        GOOGLE_API_KEY=YOUR_GOOGLE_API_KEY
+        ```
+
+    *   If using Postgres, configure the database connection:
+        ```bash
+        DATABASE_USER=your_db_user
+        DATABASE_PASSWORD=your_db_password
+        DATABASE_NAME=your_db_name
+        DATABASE_HOST=your_db_host (default: 127.0.0.1)
+        DATABASE_PORT=your_db_port (default: 5432)
+        ```
+
+### Running the Server
+
+To start the API server, use the following command:
+    ```bash
+    cd src
+    python server.py or uv run server.py
+    ```
+This will start the server at `http://0.0.0.0:8090`.
+
+### Interacting with the API
+
+The API documentation is available at `http://0.0.0.0:8090/api/v1/docs` after the server is running. You can use this documentation to explore the available endpoints and test them out.
+
+## Core Functionality
+
+The `memsrv` service exposes the following core functionalities through its API:
+
+*   **Generating Memories:**  Extracts facts/memories from conversations and stores them in the database, along with metadata and vector embeddings (`/api/v1/memories/generate`).
+*   **Creating Memories:**  Directly adds facts/memories and stores them in the database (`/api/v1/memories/create`).
+*   **Retrieving Memories by Metadata:** Retrieves memories based on metadata filters such as user ID, session ID, and application ID (`/api/v1/memories`).
+*   **Retrieving Memories by Semantic Similarity:** Retrieves memories that are semantically similar to a given query, optionally filtered by metadata (`/api/v1/memories/similar`).
+*   **Updating Memories:** Updates existing memories with new content and/or metadata (`/api/v1/memories/update`).
+*   **Deleting Memories:** Deletes memories from the database by their IDs (`/api/v1/memories/delete`).
+
+## Configuration
+
+The service's behavior is configured through environment variables and the `src/config.py` file.  Key configuration options include:
+
+*   `LLM_SERVICE`: Specifies the LLM provider to use (default: `gemini`).
+*   `DB_SERVICE`: Specifies the database backend to use (default: `chroma`, options: `chroma`, `postgres`). More are in development.
+*   `EMBEDDING_SERVICE`: Specifies the embedding provider to use (default: `gemini`).
+*   Database connection details (if using Postgres).
+
+## Directory Structure
+
+```
+└── memsrv/
+    ├── README.md          # This file
+    └── src/
+        ├── config.py        # Configuration file for selecting LLMs and vector DBs
+        ├── server.py        # Entry point for running the FastAPI server
+        └── memsrv/
+            ├── api/
+            │   ├── main.py    # FastAPI application entry point
+            │   └── routes/
+            │       └── memory.py  # API routes for memory management
+            ├── core/
+            │   ├── extractor.py     # Extracts facts from conversations
+            │   ├── memory_service.py  # Core logic for memory management
+            │   └── prompts.py       # Prompts used for fact extraction
+            ├── db/
+            │   ├── base_adapter.py  # Abstract base class for database adapters
+            │   └── adapters/
+            │       ├── __init__.py
+            │       ├── chroma.py    # ChromaDB adapter
+            │       └── postgres.py  # Postgres adapter
+            ├── embeddings/
+            │   ├── base_embedder.py # Abstract base class for embedding providers
+            │   └── providers/
+            │       └── gemini.py    # Gemini embedding provider
+            ├── llms/
+            │   ├── __init__.py
+            │   ├── base_config.py # Base class for LLM configurations
+            │   ├── base_llm.py    # Abstract base class for LLMs
+            │   └── providers/
+            │       └── gemini.py    # Gemini LLM provider
+            └── models/
+                └── memory.py      # Data models for memories and API services
+```
+
+## License
+
+This project is licensed under MIT License, see [LICENSE](./LICENSE) file for more info. Feel free to modify and use as needed and build on top of this.
