@@ -7,8 +7,10 @@ from memsrv.core.extractor import parse_messages, extract_facts
 from memsrv.llms.base_llm import BaseLLM
 from memsrv.db.base_adapter import VectorDBAdapter
 from memsrv.embeddings.base_embedder import BaseEmbedding
-from memsrv.models.memory import MemoryItem, MemoryMetadata, DBMemoryItem, MemoryUpdateItem, MemoryResponseData, MemoryActionResponse, MemoryCreateItem
 
+from memsrv.models.memory import MemoryMetadata, MemoryInDB
+from memsrv.models.request import MemoryCreateRequest, MemoryUpdateRequest
+from memsrv.models.response import ActionConfirmation, MemoryResponse
 load_dotenv()
 
 class MemoryService:
@@ -24,10 +26,12 @@ class MemoryService:
         self.db = db_adapter
         self.embedder = embedder
     
-    def format_memory_response(self, fact_id: str, action: str,  fact_content: Optional[str]=None) -> MemoryActionResponse:
-        return MemoryActionResponse(
-            memory=MemoryResponseData(id=fact_id, content=fact_content),
-            action=action
+    def format_memory_response(self, fact_id: str, action: str,  fact_content: Optional[str]=None) -> ActionConfirmation:
+        """Formats the action taken for memory"""
+        return ActionConfirmation(
+            id=fact_id,
+            document=fact_content,
+            status=action
         )
 
     def add_facts_from_conversation(self, messages: List, metadata: MemoryMetadata) -> list[str]:
@@ -42,8 +46,8 @@ class MemoryService:
 
         embeddings = self.embedder.generate_embeddings(facts)
 
-        items: List[DBMemoryItem] = [
-            DBMemoryItem(
+        items: List[MemoryInDB] = [
+            MemoryInDB(
                 document=fact,
                 embedding=embeddings[i],
                 metadata=metadata
@@ -70,9 +74,9 @@ class MemoryService:
         memories = []
         for i in range(len(results.get("ids", []))):
             memories.append(
-                MemoryItem(
-                    fact_id=results["ids"][i],
-                    fact=results["documents"][i],
+                MemoryResponse(
+                    id=results["ids"][i],
+                    document=results["documents"][i],
                     metadata=results["metadatas"][i]
                 )
             )
@@ -91,23 +95,23 @@ class MemoryService:
 
         for i in range(len(results.get("ids", []))):
             memories.append(
-                MemoryItem(
-                    fact_id=results["ids"][i],
-                    fact=results["documents"][i],
+                MemoryResponse(
+                    id=results["ids"][i],
+                    document=results["documents"][i],
                     metadata=results["metadatas"][i],
                     similarity=results["distances"][i]
                 )
             )
         return memories
     
-    def create_memories(self, data: MemoryCreateItem):
+    def create_memories(self, data: MemoryCreateRequest):
         """Directly creates memories and adds to DB"""
 
-        facts = data.facts
+        facts = data.documents
         embeddings = self.embedder.generate_embeddings(texts=facts)
 
-        items: List[DBMemoryItem] = [
-            DBMemoryItem(
+        items: List[MemoryInDB] = [
+            MemoryInDB(
                 document=fact,
                 embedding=embeddings[i],
                 metadata=data.metadata
@@ -140,13 +144,15 @@ class MemoryService:
             )
         return response
     
-    def update_memories(self, update_items: List[MemoryUpdateItem]):
+    def update_memories(self, update_items: List[MemoryUpdateRequest]):
         """Updates memory with given id and fact content"""
         new_facts = [items.document for items in update_items]
         new_embeddings = self.embedder.generate_embeddings(texts=new_facts)
 
-        items: List[DBMemoryItem] = [
-            DBMemoryItem(
+        # TODO: Partial update is allowed, either document or metadata or both
+        # should update only those that are provided, validate if id exists as well
+        items: List[MemoryInDB] = [
+            MemoryInDB(
                 id=update_item.id,
                 document=update_item.document,
                 embedding=new_embeddings[i],
