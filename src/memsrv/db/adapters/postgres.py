@@ -1,11 +1,10 @@
 """Postgres with pgvector implementation"""
 import os
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any, Optional
 import logging
 
 from sqlalchemy import create_engine, text, exc
 from memsrv.db.base_adapter import VectorDBAdapter
-from memsrv.models.memory import DBMemoryItem
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

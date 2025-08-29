@@ -1,8 +1,7 @@
 """Chroma db implementation"""
 import chromadb
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any
 from memsrv.db.base_adapter import VectorDBAdapter
-from memsrv.models.memory import DBMemoryItem
 
 class ChromaDBAdapter(VectorDBAdapter):
     """Implements vector db ops for chroma DB"""
@@ -80,7 +79,7 @@ class ChromaDBAdapter(VectorDBAdapter):
         )
         return results
 
-    def query_by_similarity(self, collection_name, query_embedding, query_text, filters, top_k):
+    def query_by_similarity(self, collection_name, query_embedding, query_text=None, filters=None, top_k=20):
         """Retreive items similar to query with optional filters"""
 
         collection = self.client.get_collection(name=collection_name)
