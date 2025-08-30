@@ -3,10 +3,9 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import logging
 
 from memsrv.api.routes import memory
-
+from memsrv.utils.logger import get_logger
 from memsrv.core.memory_service import MemoryService
 from memsrv.llms.providers.gemini import GeminiModel
 from memsrv.embeddings.providers.gemini import GeminiEmbedding
@@ -14,8 +13,7 @@ from memsrv.llms.base_config import BaseLLMConfig
 from config import LLM_SERVICE, DB_SERVICE, EMBEDDING_SERVICE, CONNECTION_STRING
 
 load_dotenv()
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 def get_llm_instance():
     if LLM_SERVICE == "gemini":

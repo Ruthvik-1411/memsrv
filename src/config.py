@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# TODO: Instead of llm, embedding service, use model name for choosing the service
+# if "gemini" in gemini-2.0-flash, gemini-embedding-001
 LLM_SERVICE = "gemini"
 DB_SERVICE = "chroma"
 # DB_SERVICE = "postgres"

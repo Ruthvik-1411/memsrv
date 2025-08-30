@@ -3,7 +3,10 @@ import os
 from typing import List
 from google.genai.client import Client as geminiClient
 from google.genai.types import EmbedContentConfig
+from memsrv.utils.logger import get_logger
 from memsrv.embeddings.base_embedder import BaseEmbedding
+
+logger = get_logger(__name__)
 
 class GeminiEmbedding(BaseEmbedding):
     """Embedding module for generating embeddings using gemini api"""
@@ -28,5 +31,5 @@ class GeminiEmbedding(BaseEmbedding):
                 embedding_result.append(embedding.values)
             return embedding_result
         except Exception as e:
-            print(f"An error occurred during embedding generation: {e}")
+            logger.error(f"An error occurred during embedding generation: {e}")
             return [[] for _ in texts]
