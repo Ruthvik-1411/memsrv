@@ -1,6 +1,4 @@
 """To add MemoryService class to add facts and to db services"""
-import os
-from dotenv import load_dotenv
 from typing import List, Dict, Optional, Any
 
 from memsrv.core.extractor import parse_messages, extract_facts
@@ -11,7 +9,6 @@ from memsrv.embeddings.base_embedder import BaseEmbedding
 from memsrv.models.memory import MemoryMetadata, MemoryInDB
 from memsrv.models.request import MemoryCreateRequest, MemoryUpdateRequest
 from memsrv.models.response import ActionConfirmation, MemoryResponse
-load_dotenv()
 
 class MemoryService:
     def __init__(self, llm: BaseLLM, db_adapter: VectorDBAdapter, embedder: BaseEmbedding):
@@ -77,7 +74,9 @@ class MemoryService:
                 MemoryResponse(
                     id=results["ids"][i],
                     document=results["documents"][i],
-                    metadata=results["metadatas"][i]
+                    metadata=results["metadatas"][i],
+                    created_at=results["metadatas"][i].get("created_at"),
+                    updated_at=results["metadatas"][i].get("updated_at")
                 )
             )
         
@@ -99,7 +98,9 @@ class MemoryService:
                     id=results["ids"][i],
                     document=results["documents"][i],
                     metadata=results["metadatas"][i],
-                    similarity=results["distances"][i]
+                    similarity=results["distances"][i],
+                    created_at=results["metadatas"][i].get("created_at"),
+                    updated_at=results["metadatas"][i].get("updated_at")
                 )
             )
         return memories
@@ -157,6 +158,7 @@ class MemoryService:
                 document=update_item.document,
                 embedding=new_embeddings[i],
                 metadata=update_item.metadata
+                # Get created at from existing record
             )
             for i, update_item in enumerate(update_items)
         ]

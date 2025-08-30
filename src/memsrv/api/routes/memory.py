@@ -1,15 +1,13 @@
 """Actual end points will be defined here"""
-from fastapi import APIRouter, Query, HTTPException
 from typing import List, Dict, Optional, Any
-import logging
+from fastapi import APIRouter, Query, HTTPException
 
 from memsrv.core.memory_service import MemoryService
-
+from memsrv.utils.logger import get_logger
 from memsrv.models.request import MemoryCreateRequest, MemoryGenerateRequest, MemoryUpdateRequest
 from memsrv.models.response import MemoriesActionResponse, GetMemoriesResponse
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 def create_memory_router(memory_service: MemoryService):
     router = APIRouter(tags=["Memory"])
@@ -99,20 +97,7 @@ def create_memory_router(memory_service: MemoryService):
             logger.exception(f"An error has occured when updating memory: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
     
-    @router.delete("/delete", response_model=MemoriesActionResponse)
-    def delete_memories(ids: List[str]):
-        """Deletes memories from database for given ids"""
-        try:
-            response = memory_service.delete_memories(memory_ids=ids)
-            return {
-                "message": f"Successfully deleted {len(response)} memories from database.",
-                "info": response
-            }
-        except Exception as e:
-            logger.exception(f"An error has occured when deleting memory: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
-    
-    @router.put("/update", response_model=MemoriesActionResponse)
+    @router.put("/memories/update", response_model=MemoriesActionResponse)
     def update_memories(items: List[MemoryUpdateRequest]):
         """Updates memories for given items"""
         try:
@@ -123,6 +108,19 @@ def create_memory_router(memory_service: MemoryService):
             }
         except Exception as e:
             logger.exception(f"An error has occured when updating memory: {str(e)}", exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.delete("/memories/delete", response_model=MemoriesActionResponse)
+    def delete_memories(ids: List[str]):
+        """Deletes memories from database for given ids"""
+        try:
+            response = memory_service.delete_memories(memory_ids=ids)
+            return {
+                "message": f"Successfully deleted {len(response)} memories from database.",
+                "info": response
+            }
+        except Exception as e:
+            logger.exception(f"An error has occured when deleting memory: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
         
     return router
