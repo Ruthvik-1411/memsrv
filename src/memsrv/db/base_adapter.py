@@ -1,7 +1,7 @@
 """Abstract class to add, query to vector DB"""
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
-from memsrv.models.memory import DBMemoryItem
+from memsrv.models.memory import MemoryInDB
 
 class VectorDBAdapter(ABC):
     """Abstract interface for any vector DB provider."""
@@ -13,12 +13,12 @@ class VectorDBAdapter(ABC):
         pass
 
     @abstractmethod
-    def add(self, collection_name: str, items: List[DBMemoryItem]) -> List[str]:
+    def add(self, collection_name: str, items: List[MemoryInDB]) -> List[str]:
         """Add items (facts + metadata) into a collection."""
         pass
     
     @abstractmethod
-    def update(self, collection_name: str, items: List[DBMemoryItem]):
+    def update(self, collection_name: str, items: List[MemoryInDB]):
         """Updates items at given with new data, fact_id should be provided"""
         pass
 

@@ -1,23 +1,25 @@
 """Actual end points will be defined here"""
-from fastapi import APIRouter, Query, HTTPException
 from typing import List, Dict, Optional, Any
-import logging
+from fastapi import APIRouter, Query, HTTPException
 
 from memsrv.core.memory_service import MemoryService
-from memsrv.models.memory import MemoryMetadata, MemoryUpdateItem, GetMemoriesResponseModel, AddMemoriesResponseModel, DeleteMemoriesResponseModel, MemoryCreateItem
+from memsrv.utils.logger import get_logger
+from memsrv.models.request import MemoryCreateRequest, MemoryGenerateRequest, MemoryUpdateRequest
+from memsrv.models.response import MemoriesActionResponse, GetMemoriesResponse
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 def create_memory_router(memory_service: MemoryService):
     router = APIRouter(tags=["Memory"])
 
-    @router.post("/memories/generate", response_model=AddMemoriesResponseModel)
-    def generate_memories(messages: List[dict], metadata: MemoryMetadata):
+    @router.post("/memories/generate", response_model=MemoriesActionResponse)
+    def generate_memories(request: MemoryGenerateRequest):
         """
         Extracts facts from a conversation and saves them with metadata.
         """
         try:
+            messages = request.messages
+            metadata = request.metadata
             response = memory_service.add_facts_from_conversation(messages, metadata)
             return {
                 "message": f"Successfully added {len(response)} memories to database.",
@@ -27,13 +29,13 @@ def create_memory_router(memory_service: MemoryService):
             logger.exception(f"An error has occured when adding to memory: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
 
-    @router.get("/memories", response_model=GetMemoriesResponseModel)
+    @router.get("/memories", response_model=GetMemoriesResponse)
     def retrieve_memories_by_metadata(
         user_id: Optional[str] = Query(None),
         session_id: Optional[str] = Query(None),
         app_id: Optional[str] = Query(None),
         limit: int = Query(50, ge=1, le=50)
-    ) -> GetMemoriesResponseModel:
+    ) -> GetMemoriesResponse:
         """Get memories by metadata filters only.
         e.g, /memories?user_id=u123&session_id=s123
         """
@@ -49,19 +51,19 @@ def create_memory_router(memory_service: MemoryService):
             # We can get the collection name from params as well, but for future
 
             memories = memory_service.search_memories_by_filter(filters=filters, limit=limit)
-            return GetMemoriesResponseModel(memories=memories)
+            return GetMemoriesResponse(memories=memories)
         except Exception as e:
             logger.exception(f"An error has occured when searching memory: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
 
-    @router.get("/memories/similar", response_model=GetMemoriesResponseModel)
+    @router.get("/memories/similar", response_model=GetMemoriesResponse)
     def retrieve_memories_by_similarity(
         query: str,
         user_id: Optional[str] = Query(None),
         session_id: Optional[str] = Query(None),
         app_id: Optional[str] = Query(None),
         limit: int = Query(50, ge=1, le=50)
-    ) -> GetMemoriesResponseModel:
+    ) -> GetMemoriesResponse:
         """Get memories by metadata filters and similarity match.
         e.g, /memories?query=What is my name?&user_id=u123&session_id=s123
         """
@@ -77,16 +79,16 @@ def create_memory_router(memory_service: MemoryService):
             memories = memory_service.search_memories_by_similarity(query=query,
                                                                     filters=filters,
                                                                     limit=limit)
-            return GetMemoriesResponseModel(memories=memories)
+            return GetMemoriesResponse(memories=memories)
         except Exception as e:
             logger.exception(f"An error has occured when searching memory: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
     
-    @router.post("/memories/create")
-    def create_memories(memories: MemoryCreateItem):
+    @router.post("/memories/create", response_model=MemoriesActionResponse)
+    def create_memories(request: MemoryCreateRequest):
         """Create a memory directly"""
         try:
-            response = memory_service.create_memories(data=memories)
+            response = memory_service.create_memories(data=request)
             return {
                 "message": f"Successfully created {len(response)} memories in the database.",
                 "info": response
@@ -95,7 +97,20 @@ def create_memory_router(memory_service: MemoryService):
             logger.exception(f"An error has occured when updating memory: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
     
-    @router.delete("/delete", response_model=DeleteMemoriesResponseModel)
+    @router.put("/memories/update", response_model=MemoriesActionResponse)
+    def update_memories(items: List[MemoryUpdateRequest]):
+        """Updates memories for given items"""
+        try:
+            response = memory_service.update_memories(update_items=items)
+            return {
+                "message": f"Successfully updated {len(response)} memories in the database.",
+                "info": response
+            }
+        except Exception as e:
+            logger.exception(f"An error has occured when updating memory: {str(e)}", exc_info=True)
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @router.delete("/memories/delete", response_model=MemoriesActionResponse)
     def delete_memories(ids: List[str]):
         """Deletes memories from database for given ids"""
         try:
@@ -106,19 +121,6 @@ def create_memory_router(memory_service: MemoryService):
             }
         except Exception as e:
             logger.exception(f"An error has occured when deleting memory: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
-    
-    @router.put("/update")
-    def update_memories(items: List[MemoryUpdateItem]):
-        """Updates memories for given items"""
-        try:
-            response = memory_service.update_memories(update_items=items)
-            return {
-                "message": f"Successfully updated {len(response)} memories in the database.",
-                "info": response
-            }
-        except Exception as e:
-            logger.exception(f"An error has occured when updating memory: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail=str(e))
         
     return router

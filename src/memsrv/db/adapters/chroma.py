@@ -1,8 +1,11 @@
 """Chroma db implementation"""
+from typing import Dict, Any
 import chromadb
-from typing import List, Dict, Any, Optional
+from memsrv.utils.logger import get_logger
 from memsrv.db.base_adapter import VectorDBAdapter
-from memsrv.models.memory import DBMemoryItem
+from memsrv.db.utils import serialize_items
+
+logger = get_logger(__name__)
 
 class ChromaDBAdapter(VectorDBAdapter):
     """Implements vector db ops for chroma DB"""
@@ -21,7 +24,8 @@ class ChromaDBAdapter(VectorDBAdapter):
     def _format_filters(self, filters: Dict[str, Any]) -> Dict[str, Any]:
         """
         Converts simple {k: v} filter dict into Chroma's query format with $and + $eq.
-        This formatter will be implemented for all adapters
+        This formatter will be implemented for all adapters and changes as per
+        the filtering mechanism of each adapter.
         """
         if not filters:
             return {}
@@ -44,52 +48,38 @@ class ChromaDBAdapter(VectorDBAdapter):
         return True
 
     def add(self, collection_name, items):
+        
         collection = self.client.get_collection(name=collection_name)
+        serialized_items = serialize_items(items)
+        
         collection.add(
-            ids=[item.id for item in items],
-            documents=[item.document for item in items],
-            embeddings=[item.embedding for item in items],
-            metadatas=[item.metadata.model_dump() for item in items]
+            ids=serialized_items["ids"],
+            documents=serialized_items["documents"],
+            embeddings=serialized_items["embeddings"],
+            metadatas=serialized_items["metadatas"]
         )
-        print(f"Successfully added {len(items)} items to chroma collection.")
-        return [item.id for item in items]
-    
-    def update(self, collection_name, items):
-        collection = self.client.get_collection(name=collection_name)
-        collection.update(
-            ids=[item.id for item in items],
-            documents=[item.document for item in items],
-            embeddings=[item.embedding for item in items],
-            metadatas=[item.metadata.model_dump() for item in items]
-        )
-        print(f"Successfully updated {len(items)} items to chroma collection.")
-        return [item.id for item in items]
-
-    def delete(self, collection_name, fact_ids):
-        collection = self.client.get_collection(name=collection_name)
-        collection.delete(ids=fact_ids)
-        print(f"Successfully deleted memory with id {fact_ids} from chroma collection")
-        return fact_ids
+        
+        logger.info(f"Successfully added {len(items)} items to chroma collection.")
+        return serialized_items["ids"]
 
     def query_by_filter(self, collection_name, filters, limit):
+        
         collection = self.client.get_collection(name=collection_name)
         where_clause = self._format_filters(filters)
+        
         results = collection.get(
             where=where_clause if where_clause else None,
             limit=limit
         )
+        
+        logger.info(results)
         return results
 
-    def query_by_similarity(self, collection_name, query_embedding, query_text, filters, top_k):
-        """Retreive items similar to query with optional filters"""
+    def query_by_similarity(self, collection_name, query_embedding, query_text=None, filters=None, top_k=20):
 
         collection = self.client.get_collection(name=collection_name)
         where_clause = self._format_filters(filters)
 
-        # To keep our adapters clean, we expect embeddings independently
-        # This way any provider can be used with any DB
-        # In some cases for keyword search or to perform Hybrid search
-        # we might use the query text
         results = collection.query(
             query_embeddings=[query_embedding],
             n_results=top_k,
@@ -106,3 +96,26 @@ class ChromaDBAdapter(VectorDBAdapter):
             results["ids"], results["documents"], results["metadatas"], results["distances"] = [], [], [], []
 
         return results
+
+    def update(self, collection_name, items):
+        
+        collection = self.client.get_collection(name=collection_name)
+        serialized_items = serialize_items(items)
+        
+        collection.update(
+            ids=serialized_items["ids"],
+            documents=serialized_items["documents"],
+            embeddings=serialized_items["embeddings"],
+            metadatas=serialized_items["metadatas"]
+        )
+        
+        logger.info(f"Successfully updated {len(items)} items to chroma collection.")
+        return serialized_items["ids"]
+
+    def delete(self, collection_name, fact_ids):
+        
+        collection = self.client.get_collection(name=collection_name)
+        collection.delete(ids=fact_ids)
+        
+        logger.info(f"Successfully deleted memory with id {fact_ids} from chroma collection")
+        return fact_ids
