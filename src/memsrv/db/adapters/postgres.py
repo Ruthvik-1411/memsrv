@@ -1,13 +1,13 @@
 """Postgres with pgvector implementation"""
 import os
 from typing import Dict, Any, Optional
-import logging
 
 from sqlalchemy import create_engine, text, exc
+from memsrv.utils.logger import get_logger
 from memsrv.db.base_adapter import VectorDBAdapter
+from memsrv.db.utils import serialize_items
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # TODO: Refactor for SQL Injection vulnerability
 class PostgresDBAdapter(VectorDBAdapter):
@@ -44,7 +44,7 @@ class PostgresDBAdapter(VectorDBAdapter):
         """Formats filter dict to sql where statements"""
         if filters:
             where_clauses = [f"{key} = :{key}" for key in filters]
-            where_sql = "WHERE " + " AND ".join(where_clauses)
+            where_sql = " WHERE " + " AND ".join(where_clauses)
 
             return where_sql
         return ""
@@ -64,14 +64,16 @@ class PostgresDBAdapter(VectorDBAdapter):
             conn.execute(text(
                 f"""
                 CREATE TABLE IF NOT EXISTS {name} (
-                    fact_id TEXT PRIMARY KEY,
-                    fact TEXT,
+                    id TEXT PRIMARY KEY,
+                    document TEXT,
                     embedding VECTOR({vector_size}),
                     user_id TEXT,
                     app_id TEXT,
                     session_id TEXT,
                     agent_name TEXT,
-                    created_at TIMESTAMPTZ DEFAULT NOW()
+                    event_timestamp TIMESTAMPTZ DEFAULT NOW(),
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
                 );
                 """
             ))
@@ -107,36 +109,38 @@ class PostgresDBAdapter(VectorDBAdapter):
                     raise ValueError(e)
 
     def add(self, collection_name, items):
-        """Adds a list of memory items using a single transactional bulk insert."""
-        if not items:
-            return
 
         self._ensure_collection_exists(collection_name)
+        serialized_items = serialize_items(items)
         
         # Prepare data for bulk insert
         data_to_insert = [
             {
-                "id": item.id,
-                "document": item.document,
-                "embedding": str(item.embedding),
-                "user_id": item.metadata.user_id,
-                "app_id": item.metadata.app_id,
-                "session_id": item.metadata.session_id,
-                "agent_name": item.metadata.agent_name,
+                "id": serialized_items["ids"][i],
+                "document": serialized_items["documents"][i],
+                "embedding": str(serialized_items["embeddings"][i]),
+                "user_id": serialized_items["metadatas"][i]["user_id"],
+                "app_id": serialized_items["metadatas"][i]["app_id"],
+                "session_id": serialized_items["metadatas"][i]["session_id"],
+                "agent_name": serialized_items["metadatas"][i]["agent_name"],
+                "event_timestamp": serialized_items["metadatas"][i]["event_timestamp"],
+                "created_at": serialized_items["metadatas"][i]["created_at"],
+                "updated_at": serialized_items["metadatas"][i]["updated_at"]
             }
-            for item in items
+            for i in range(len(items))
         ]
-
+        # Adds a list of memory items using a single transactional bulk insert.
         # Use named parameters for clarity and safety
         insert_stmt = text(f"""
             INSERT INTO {collection_name} (
-                fact_id, fact, embedding, user_id, app_id, session_id, agent_name
+                id, document, embedding, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at
             ) VALUES (
-                :id, :document, :embedding, :user_id, :app_id, :session_id, :agent_name
+                :id, :document, :embedding, :user_id, :app_id, :session_id, :agent_name, :event_timestamp, :created_at, :updated_at
             )
-            ON CONFLICT (fact_id) DO UPDATE SET
-                fact = EXCLUDED.fact,
-                embedding = EXCLUDED.embedding;
+            ON CONFLICT (id) DO UPDATE SET
+                document = EXCLUDED.document,
+                embedding = EXCLUDED.embedding,
+                updated_at = NOW();
         """)
 
         with self.engine.begin() as conn:
@@ -145,22 +149,17 @@ class PostgresDBAdapter(VectorDBAdapter):
         logger.info(f"Successfully added/updated {len(items)} items in collection '{collection_name}'.")
         return [item.id for item in items]
     
-    def update(self, collection_name, fact_id, items):
-        raise ValueError("Update for postgres is still in progress")
-    
-    def delete(self, collection_name, fact_id):
-        raise ValueError("Delete for postgres is still in progress")
 
     def query_by_filter(self, collection_name, filters, limit):
-        """Queries memories from a collection using metadata filters."""
         params = {"limit": limit}
         params.update(filters)
         
         where_sql = self._format_filters(filters=filters)
         
-        query_str = f"SELECT fact_id, fact, user_id, app_id, session_id, agent_name, created_at FROM {collection_name}"
+        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at FROM {collection_name}"
         if where_sql:
             query_str += where_sql
+        # TODO: Change to use updated_at
         query_str += " ORDER BY created_at DESC LIMIT :limit;"
         
         query = text(query_str)
@@ -170,22 +169,29 @@ class PostgresDBAdapter(VectorDBAdapter):
             result_proxy = conn.execute(query, params)
             # .mappings() allows dict-like access
             for row in result_proxy.mappings():
-                results["ids"].append(row['fact_id'])
-                results["documents"].append(row['fact'])
+                results["ids"].append(row['id'])
+                results["documents"].append(row['document'])
                 results["metadatas"].append({
-                    "user_id": row['user_id'], "app_id": row['app_id'], "session_id": row['session_id'],
-                    "agent_name": row['agent_name'], "timestamp": row['created_at'].isoformat()
+                    "user_id": row['user_id'],
+                    "app_id": row['app_id'],
+                    "session_id": row['session_id'],
+                    "agent_name": row['agent_name'],
+                    "event_timestamp": row["event_timestamp"].isoformat(),
+                    "created_at": row['created_at'].isoformat(),
+                    # "updated_at": row['updated_at'].isoformat()
                 })
         logger.info(results)
         return results
 
     def query_by_similarity(self, collection_name, query_embedding, query_text=None, filters=None, top_k=20):
-        """Performs similarity search, converting cosine distance to a similarity score."""
+        
         params = {"embedding": str(query_embedding), "top_k": top_k}
         params.update(filters)
         
         where_sql = self._format_filters(filters=filters)
-        query_str = f"SELECT fact_id, fact, user_id, app_id, session_id, agent_name, created_at, 1 - (embedding <=> :embedding) AS similarity FROM {collection_name} "
+
+        # Similarity search, converting cosine distance to a similarity score.
+        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, 1 - (embedding <=> :embedding) AS similarity FROM {collection_name}"
         if where_sql:
             query_str += where_sql
         query_str += " ORDER BY similarity DESC LIMIT :top_k;"
@@ -196,13 +202,73 @@ class PostgresDBAdapter(VectorDBAdapter):
         with self.engine.connect() as conn:
             result_proxy = conn.execute(query, params)
             for row in result_proxy.mappings():
-                results["ids"].append(row['fact_id'])
-                results["documents"].append(row['fact'])
+                results["ids"].append(row['id'])
+                results["documents"].append(row['document'])
                 results["metadatas"].append({
-                    "user_id": row['user_id'], "app_id": row['app_id'], "session_id": row['session_id'],
-                    "agent_name": row['agent_name'], "timestamp": row['created_at'].isoformat()
+                    "user_id": row['user_id'],
+                    "app_id": row['app_id'],
+                    "session_id": row['session_id'],
+                    "agent_name": row['agent_name'],
+                    "event_timestamp": row["event_timestamp"].isoformat(),
+                    "created_at": row['created_at'].isoformat(),
+                    # "updated_at": row['updated_at'].isoformat()
                 })
                 # We return similarity score but keep the key 'distances' for API compatibility
                 results["distances"].append(row['similarity'])
         
         return results
+
+    def update(self, collection_name, items):
+        
+        self._ensure_collection_exists(collection_name)
+        serialized_items = serialize_items(items)
+        
+        data_to_update = [
+            {
+                "id": serialized_items["ids"][i],
+                "document": serialized_items["documents"][i],
+                "embedding": str(serialized_items["embeddings"][i]),
+                "user_id": serialized_items["metadatas"][i]["user_id"],
+                "app_id": serialized_items["metadatas"][i]["app_id"],
+                "session_id": serialized_items["metadatas"][i]["session_id"],
+                "agent_name": serialized_items["metadatas"][i]["agent_name"],
+                "event_timestamp": serialized_items["metadatas"][i].get("event_timestamp"),
+                "updated_at": serialized_items["metadatas"][i]["updated_at"],
+            }
+            for i in range(len(items))
+        ]
+        # TODO: Work on partial updates, either document or metadata
+        update_stmt = text(f"""
+            UPDATE {collection_name}
+            SET
+                document = :document,
+                embedding = :embedding,
+                user_id = :user_id,
+                app_id = :app_id,
+                session_id = :session_id,
+                agent_name = :agent_name,
+                event_timestamp = :event_timestamp,
+                updated_at = :updated_at
+            WHERE id = :id;
+        """)
+
+        with self.engine.begin() as conn:
+            conn.execute(update_stmt, data_to_update)
+
+        logger.info(f"Successfully updated {len(items)} items in collection '{collection_name}'.")
+        return serialized_items["ids"]
+    
+    def delete(self, collection_name, fact_ids):
+
+        self._ensure_collection_exists(collection_name)
+
+        delete_stmt = text(f"""
+            DELETE FROM {collection_name}
+            WHERE id = ANY(:ids);
+        """)
+
+        with self.engine.begin() as conn:
+            conn.execute(delete_stmt, {"ids": fact_ids})
+
+        logger.info(f"Successfully deleted {len(fact_ids)} items from collection '{collection_name}'.")
+        return fact_ids
