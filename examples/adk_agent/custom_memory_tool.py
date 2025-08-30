@@ -1,10 +1,11 @@
+"""A custom implementation for PreLoadMemoryTool() of google-adk"""
 from typing_extensions import override
 
 from google.adk.tools.base_tool import BaseTool
 from google.adk.tools.tool_context import ToolContext
 from google.adk.models.llm_request import LlmRequest
 
-from adk_agent.memory_client import MemoryClient
+from shared.memory_client import MemoryClient
 
 memory = MemoryClient()
 
@@ -27,14 +28,17 @@ class CustomMemoryTool(BaseTool):
         user_content = tool_context.user_content
         user_query = user_content.parts[0].text
         print("User query:", user_query)
-        memory_text = "I like watching action movies.\n My name is ruths and I am a student."
-        # FIXME: Hard coding for now, but should get it from tool context
-        # raw_user_memories = memory.get_memories(user_id="ruths@gmail.com", app_id="simple_agent")
-        # if not raw_user_memories["facts"]:
-        #     return
-        # memory_text = ""
-        # for item in raw_user_memories["facts"]:
-        #     memory_text += item["fact"] + "\n"
+
+        # For testing we can hardcode this and comment below logic for fetching from memory client
+        # memory_text = "I like watching action movies.\n My name is ruths and I am a student."
+
+        # We fetch memories associated with this user and app from our memory service, memsrv
+        raw_user_memories = memory.get_memories(user_id=user_id, app_id=app_name)
+        if not raw_user_memories["memories"]:
+            return
+        memory_text = ""
+        for item in raw_user_memories["memories"]:
+            memory_text += item["document"] + "\n"
         updated_instructions = f"""The following content is from your previous conversations with the user.
 They may be useful for answering the user's current query.
 <PAST_CONVERSATIONS>

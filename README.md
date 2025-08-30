@@ -72,7 +72,10 @@ Key features:
 To start the API server, use the following command:
 ```bash
 cd src
-python server.py or uv run server.py
+
+python server.py
+# or
+uv run server.py
 ```
 This will start the server at `http://0.0.0.0:8090`.
 
@@ -99,6 +102,27 @@ The service's behavior is configured through environment variables and the `src/
 *   `DB_SERVICE`: Specifies the database backend to use (default: `chroma`, options: `chroma`, `postgres`). More are in development.
 *   `EMBEDDING_SERVICE`: Specifies the embedding provider to use (default: `gemini`).
 *   Database connection details (if using Postgres).
+
+## Using the service in your agent
+### Google ADK
+
+The `google-adk` library has an in built tool called `PreloadMemoryTool` which preloads memory for a particular user into the session. This is automatically called when a request is sent to LLM. When a user sends a message to the agent, the `PreloadMemoryTool` fetches the similar memories to this user query and **appends** the retrieved messages to the system instructions. That way the when the LLM starts responding, it will have the context of previous sessions.
+
+In the `examples/adk_agent/custom_memory_tool.py` you can find the same implementation, but we fetch memories from our client which communicates with our memory service running on ``http://0.0.0.0:8090`. See `examples/shared/memory_client.py` for more info.
+
+To get started, make sure the `memsrv` service is running, follow the steps [here](#running-the-server).
+```bash
+# In a new terminal
+# Activate your venv
+source venv/bin/activate or venv\Scripts\activate
+
+cd examples
+
+# create a .env file. refer env.example in that folder
+streamlit run app.py
+```
+
+Open the streamlit app running at `http://localhost:8501/`. Choose the user id to test and do some conversation, possibly saying some facts about you, name, likes etc. Once done, click on new session. We add memories after a session is completed, hence, when you now say hi or hello, the agent should be using the information from your previous session.
 
 ## Directory Structure
 
@@ -133,8 +157,12 @@ The service's behavior is configured through environment variables and the `src/
             │   ├── base_llm.py    # Abstract base class for LLMs
             │   └── providers/
             │       └── gemini.py    # Gemini LLM provider
-            └── models/
-                └── memory.py      # Data models for memories and API services
+            ├── models/
+            │   └── memory.py      # Data models for memories
+            │   └── requests.py    # Data models for API requests
+            │   └── response.py    # Data models for API responses
+            ├── utils/
+                └── logger.py      # Common logger for all files
 ```
 
 ## License

@@ -2,7 +2,7 @@
 from google.adk.agents import Agent
 
 from adk_agent.tools import get_current_time, calculate_expression
-from adk_agent.memory_test import CustomMemoryTool
+from adk_agent.custom_memory_tool import CustomMemoryTool
 
 from dotenv import load_dotenv
 # To load the google api keys
