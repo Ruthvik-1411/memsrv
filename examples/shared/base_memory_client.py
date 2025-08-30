@@ -1,1 +1,0 @@
-"""Common http client side implementation for memory service"""

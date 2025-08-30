@@ -4,14 +4,37 @@ import uuid
 import asyncio
 import streamlit as st
 from adk_agent.response_manager import ResponseManager
-from adk_agent.memory_client import MemoryClient
+from shared.memory_client import MemoryClient
 
-# --- Page Configuration ---
 st.set_page_config(page_title="Agent Response Manager", layout="wide")
+
+SAMPLE_USERS = [
+    "ruths@gmail.com",
+    "rengoku@gmail.com",
+    "jon@gmail.com",
+    "jane@email.com",
+    "user@email.com",
+]
+
+if "user_id" not in st.session_state:
+    st.title("Hello there!")
+    st.info("Choose a user id to continue.")
+
+    selected_user = st.selectbox(
+        "Choose your account",
+        options=SAMPLE_USERS,
+        index=0
+    )
+
+    if st.button("Start session with this user id", disabled=(not selected_user)):
+        st.session_state.user_id = selected_user
+        st.rerun()
+    
+    st.stop()
 
 # --- Session State Initialization ---
 if "response_manager" not in st.session_state:
-    st.session_state.response_manager = ResponseManager()
+    st.session_state.response_manager = ResponseManager(user_id=st.session_state.user_id)
 if "memory_client" not in st.session_state:
     st.session_state.memory_client = MemoryClient()
 if "session_id" not in st.session_state:
@@ -22,6 +45,16 @@ if "messages" not in st.session_state:
 
 # --- Sidebar ---
 with st.sidebar:
+    st.markdown(f"Welcome: `{st.session_state.user_id}`")
+    if st.button("Change User"):
+        # delete all keys for now
+        keys_to_delete = list(st.session_state.keys())
+        for key in keys_to_delete:
+            del st.session_state[key]
+        st.toast("Select a new user id.")
+        st.rerun()
+
+    st.divider()
     st.title("Settings")
     st.markdown(f"**Session ID:**\n`{st.session_state.session_id}`")
 
@@ -31,10 +64,10 @@ with st.sidebar:
         st.session_state.memory_client.add_to_memory(
             messages=completed_session_events,
             metadata={
-                "user_id": "ruths@gmail.com",
-                "app_id": "simple_agent",
+                "user_id": st.session_state.user_id,
                 "session_id": st.session_state.session_id,
-                "agent_name": "local_adk_agent"
+                "app_id": st.session_state.response_manager.runner.app_name,
+                "agent_name": st.session_state.response_manager.agent.name
         })
         st.toast(f"Successfully added {st.session_state.session_id} to memories. Memories updated.")
         st.session_state.session_id = str(uuid.uuid4())

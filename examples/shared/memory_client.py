@@ -1,3 +1,4 @@
+"""Common http client side implementation for memory service"""
 import requests
 from typing import Dict, Any, List, Optional
 
@@ -21,7 +22,7 @@ class MemoryClient:
 
     def get_memories(
         self,
-        user_id: Optional[str] = None,
+        user_id: str,
         session_id: Optional[str] = None,
         app_id: Optional[str] = None,
         limit: int = 50

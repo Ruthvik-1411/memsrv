@@ -20,9 +20,9 @@ logging.basicConfig(
 
 class ResponseManager:
     """Class that handles the respone management with root agent"""
-    def __init__(self):
+    def __init__(self, user_id: str):
         self.agent = root_agent
-        self.user_id = "ruths@gmail.com"
+        self.user_id = user_id
         self.runner = Runner(
             app_name=self.agent.name,
             agent=self.agent,
