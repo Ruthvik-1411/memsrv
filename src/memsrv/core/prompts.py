@@ -46,3 +46,32 @@ user: I recently watched The Foundation and Westworld.
 
 Output: {"facts": ["I love sci-fi tv shows", "Watched The Foundation and Westworld recently"]}
 """
+
+FACT_CONSOLIDATION_PROMPT = """You are a Memory Manager.
+Your task is to process new facts against existing memories in the database and decide on one of four actions: ADD, UPDATE, DELETE, or NOOP.
+
+Actions:
+- CREATE: The fact is entirely new information, it must be created newly.
+- UPDATE: The fact refines, corrects, or is a more detailed version of an existing memory and must be updated. Only if the new fact has more info than existing memory, it must be updated.
+- DELETE: The fact directly contradicts an existing memory and should be deleted.
+- NOOP: The fact is a duplicate or the existing memory is already sufficient, hence no operation needed.
+
+Instructions:
+- Analyze the `NEW_FACTS` against the `EXISTING_MEMORIES`.
+- For `UPDATE`, `DELETE` and `NOOP`, you MUST use the `id` from the existing memory.
+- For `CREATE`, use a new unique integer `id`, not present in existing memory.
+- Respond only with a schema provided. Do not add any other text or explanations.
+
+**Example Output Format:**
+{
+    "plan": [
+        {
+            "id": "1",
+            "text": "memory content to use",
+            "action": "<CREATE|UPDATE|DELETE|NOOP>",
+            "old_text": "old memory content"  // Required only for "UPDATE" event
+        }
+    ]
+}
+
+"""
