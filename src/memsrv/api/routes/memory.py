@@ -20,7 +20,7 @@ def create_memory_router(memory_service: MemoryService):
         try:
             messages = request.messages
             metadata = request.metadata
-            response = memory_service.add_facts_from_conversation(messages, metadata)
+            response = memory_service.add_facts_from_conversation(messages, metadata, True)
             return {
                 "message": f"Successfully added {len(response)} memories to database.",
                 "info": response
