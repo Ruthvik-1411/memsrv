@@ -40,3 +40,12 @@ class MemoryInDB(BaseModel):
     metadata: MemoryMetadata
     created_at: str = Field(default_factory=get_current_time)
     updated_at: str = Field(default_factory=get_current_time)
+
+class MemoryUpdatePayload(BaseModel):
+    """
+    Internal structure for passing a prepared memory update to a DB adapter.
+    """
+    id: str
+    document: str
+    embedding: List[float]
+    updated_at: str = Field(default_factory=get_current_time)

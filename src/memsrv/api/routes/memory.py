@@ -101,6 +101,7 @@ def create_memory_router(memory_service: MemoryService):
     def update_memories(items: List[MemoryUpdateRequest]):
         """Updates memories for given items"""
         try:
+            # TODO: Add check by id here before proceeding to update and extend the list
             response = memory_service.update_memories(update_items=items)
             return {
                 "message": f"Successfully updated {len(response)} memories in the database.",
@@ -114,6 +115,7 @@ def create_memory_router(memory_service: MemoryService):
     def delete_memories(ids: List[str]):
         """Deletes memories from database for given ids"""
         try:
+            # TODO: Add check by id here before proceeding to delete and extend the list
             response = memory_service.delete_memories(memory_ids=ids)
             return {
                 "message": f"Successfully deleted {len(response)} memories from database.",

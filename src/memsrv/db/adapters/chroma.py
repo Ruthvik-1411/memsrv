@@ -61,6 +61,14 @@ class ChromaDBAdapter(VectorDBAdapter):
         
         logger.info(f"Successfully added {len(items)} items to chroma collection.")
         return serialized_items["ids"]
+    
+    def get_by_ids(self, collection_name, ids):
+
+        collection = self.client.get_collection(name=collection_name)
+
+        result = collection.get(ids=ids)
+
+        return result
 
     def query_by_filter(self, collection_name, filters, limit):
         
@@ -100,17 +108,20 @@ class ChromaDBAdapter(VectorDBAdapter):
     def update(self, collection_name, items):
         
         collection = self.client.get_collection(name=collection_name)
-        serialized_items = serialize_items(items)
+        ids_to_update = [item.id for item in items]
+        documents = [item.document for item in items]
+        embeddings = [item.embedding for item in items]
+        metadatas = [{"updated_at": item.updated_at} for item in items]
         
         collection.update(
-            ids=serialized_items["ids"],
-            documents=serialized_items["documents"],
-            embeddings=serialized_items["embeddings"],
-            metadatas=serialized_items["metadatas"]
+            ids=ids_to_update,
+            documents=documents,
+            embeddings=embeddings,
+            metadatas=metadatas
         )
         
         logger.info(f"Successfully updated {len(items)} items to chroma collection.")
-        return serialized_items["ids"]
+        return ids_to_update
 
     def delete(self, collection_name, fact_ids):
         

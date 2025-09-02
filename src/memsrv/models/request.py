@@ -56,22 +56,13 @@ class MemoryUpdateRequest(BaseModel):
     """
     Model for the /memories/update endpoint.
     Client provides the ID of the memory and the fields to update.
-    Fields are optional to allow partial updates.
     """
     id: str = Field(description="ID of the memory to update")
-    document: Optional[str] = Field(default=None, description="Memory text to update the existing one.")
-    metadata: Optional[MemoryMetadata] = None
+    document: str = Field(default=None, description="Memory text to update the existing one.")
 
     model_config = ConfigDict(json_schema_extra={
         "examples": [{
             "id": "be94116b-6817-4e87-b490-4adae1d7824b",
-            "document": "I like action movies without CGI.",
-            "metadata": {
-                "user_id": "user@email.com",
-                "app_id": "swagger",
-                "session_id": "s123",
-                "agent_name": "custom_agent",
-                "event_timestamp": "2025-08-29T17:35:10.557Z"
-            }
+            "document": "I like action movies without CGI."
         }]
     })

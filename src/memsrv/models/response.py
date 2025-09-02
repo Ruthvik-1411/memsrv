@@ -23,7 +23,7 @@ class ActionConfirmation(BaseModel):
     # want to expose it in api response
     id: str
     document: Optional[str] = None
-    status: Literal["CREATED", "UPDATED", "DELETED"]
+    status: Literal["CREATED", "UPDATED", "DELETED", "NOT_FOUND"]
 
 class MemoriesActionResponse(BaseModel):
     """A generic response model for Create, Update, Delete operations."""

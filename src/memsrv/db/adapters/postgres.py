@@ -149,6 +149,9 @@ class PostgresDBAdapter(VectorDBAdapter):
         logger.info(f"Successfully added/updated {len(items)} items in collection '{collection_name}'.")
         return [item.id for item in items]
     
+    def get_by_ids(self, collection_name, ids):
+        pass
+        # return super().get_by_id(collection_name, id)
 
     def query_by_filter(self, collection_name, filters, limit):
         params = {"limit": limit}
@@ -221,21 +224,15 @@ class PostgresDBAdapter(VectorDBAdapter):
     def update(self, collection_name, items):
         
         self._ensure_collection_exists(collection_name)
-        serialized_items = serialize_items(items)
         
         data_to_update = [
             {
-                "id": serialized_items["ids"][i],
-                "document": serialized_items["documents"][i],
-                "embedding": str(serialized_items["embeddings"][i]),
-                "user_id": serialized_items["metadatas"][i]["user_id"],
-                "app_id": serialized_items["metadatas"][i]["app_id"],
-                "session_id": serialized_items["metadatas"][i]["session_id"],
-                "agent_name": serialized_items["metadatas"][i]["agent_name"],
-                "event_timestamp": serialized_items["metadatas"][i].get("event_timestamp"),
-                "updated_at": serialized_items["metadatas"][i]["updated_at"],
+                "id": item.id,
+                "document": item.document,
+                "embedding": str(item.embedding),
+                "updated_at": item.updated_at,
             }
-            for i in range(len(items))
+            for item in items
         ]
         # TODO: Work on partial updates, either document or metadata
         update_stmt = text(f"""
@@ -243,11 +240,6 @@ class PostgresDBAdapter(VectorDBAdapter):
             SET
                 document = :document,
                 embedding = :embedding,
-                user_id = :user_id,
-                app_id = :app_id,
-                session_id = :session_id,
-                agent_name = :agent_name,
-                event_timestamp = :event_timestamp,
                 updated_at = :updated_at
             WHERE id = :id;
         """)
@@ -256,7 +248,7 @@ class PostgresDBAdapter(VectorDBAdapter):
             conn.execute(update_stmt, data_to_update)
 
         logger.info(f"Successfully updated {len(items)} items in collection '{collection_name}'.")
-        return serialized_items["ids"]
+        return [item.id for item in items]
     
     def delete(self, collection_name, fact_ids):
 

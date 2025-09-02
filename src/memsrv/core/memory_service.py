@@ -6,7 +6,7 @@ from memsrv.llms.base_llm import BaseLLM
 from memsrv.db.base_adapter import VectorDBAdapter
 from memsrv.embeddings.base_embedder import BaseEmbedding
 from memsrv.utils.logger import get_logger
-from memsrv.models.memory import MemoryMetadata, MemoryInDB
+from memsrv.models.memory import MemoryMetadata, MemoryInDB, MemoryUpdatePayload
 from memsrv.models.request import MemoryCreateRequest, MemoryUpdateRequest
 from memsrv.models.response import ActionConfirmation, MemoryResponse
 
@@ -137,18 +137,15 @@ class MemoryService:
     
     def update_memories(self, update_items: List[MemoryUpdateRequest]):
         """Updates memory with given id and fact content"""
+        
         new_facts = [items.document for items in update_items]
         new_embeddings = self.embedder.generate_embeddings(texts=new_facts)
 
-        # TODO: Partial update is allowed, either document or metadata or both
-        # should update only those that are provided, validate if id exists as well
-        items: List[MemoryInDB] = [
-            MemoryInDB(
+        items: List[MemoryUpdatePayload] = [
+            MemoryUpdatePayload(
                 id=update_item.id,
                 document=update_item.document,
-                embedding=new_embeddings[i],
-                metadata=update_item.metadata
-                # Get created at from existing record
+                embedding=new_embeddings[i]
             )
             for i, update_item in enumerate(update_items)
         ]
@@ -227,9 +224,9 @@ class MemoryService:
                     memories_to_update.append(
                         MemoryUpdateRequest(
                             id=original_id,
-                            document=text,
-                            # FIXME: Might need to avoid overwriting metadata
-                            metadata=metadata
+                            document=text
+                            # Ignore metadata for update
+                            # create new one if needed
                         )
                     )
                 else:
