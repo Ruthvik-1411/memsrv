@@ -76,7 +76,7 @@ def create_memory_router(memory_service: MemoryService):
             if app_id:
                 filters["app_id"] = app_id
 
-            memories = memory_service.search_memories_by_similarity(query=query,
+            memories = memory_service.search_memories_by_similarity(query_texts=query,
                                                                     filters=filters,
                                                                     limit=limit)
             return GetMemoriesResponse(memories=memories)

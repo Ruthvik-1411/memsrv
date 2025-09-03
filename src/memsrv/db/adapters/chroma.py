@@ -79,30 +79,20 @@ class ChromaDBAdapter(VectorDBAdapter):
             where=where_clause if where_clause else None,
             limit=limit
         )
-        
-        logger.info(results)
+
         return results
 
-    def query_by_similarity(self, collection_name, query_embedding, query_text=None, filters=None, top_k=20):
+    def query_by_similarity(self, collection_name, query_embeddings, query_texts=None, filters=None, top_k=20):
 
         collection = self.client.get_collection(name=collection_name)
         where_clause = self._format_filters(filters)
 
         results = collection.query(
-            query_embeddings=[query_embedding],
+            query_embeddings=query_embeddings,
             n_results=top_k,
             where=where_clause if where_clause else None
         )
-        # Chroma supports multi queries in one call, so returns as a list of vals
-        # Since we are currently running a single query, we take the first result
-        if results.get("ids"):
-            results["ids"] = results["ids"][0]
-            results["documents"] = results["documents"][0]
-            results["metadatas"] = results["metadatas"][0]
-            results["distances"] = results["distances"][0]
-        else:
-            results["ids"], results["documents"], results["metadatas"], results["distances"] = [], [], [], []
-
+        
         return results
 
     def update(self, collection_name, items):

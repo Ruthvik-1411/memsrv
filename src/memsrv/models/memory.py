@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 from typing import Optional, List
 
-# TODO: add timestamps as well
 def get_current_time():
     """Gets current UTC time in iso format"""
     # add offset based on timezone if needed

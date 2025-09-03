@@ -38,6 +38,6 @@ class VectorDBAdapter(ABC):
         pass
 
     @abstractmethod
-    def query_by_similarity(self, collection_name: str, query_embedding: List[float],  query_text: Optional[str] = None, filters: Optional[Dict[str, Any]] = None, top_k: int = 20):
+    def query_by_similarity(self, collection_name: str, query_embeddings: List[List[float]],  query_texts: List[Optional[str]] = None, filters: Optional[Dict[str, Any]] = None, top_k: int = 20):
         """Query items by text with optional filters."""
         pass

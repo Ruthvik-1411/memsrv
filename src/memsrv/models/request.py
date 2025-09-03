@@ -55,7 +55,7 @@ class MemoryGenerateRequest(BaseModel):
 class MemoryUpdateRequest(BaseModel):
     """
     Model for the /memories/update endpoint.
-    Client provides the ID of the memory and the fields to update.
+    Client provides the ID of the memory and the content to update.
     """
     id: str = Field(description="ID of the memory to update")
     document: str = Field(default=None, description="Memory text to update the existing one.")

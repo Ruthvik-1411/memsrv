@@ -159,15 +159,19 @@ class PostgresDBAdapter(VectorDBAdapter):
         
         where_sql = self._format_filters(filters=filters)
         
-        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at FROM {collection_name}"
+        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at FROM {collection_name}"
         if where_sql:
             query_str += where_sql
-        # TODO: Change to use updated_at
-        query_str += " ORDER BY created_at DESC LIMIT :limit;"
+
+        query_str += " ORDER BY updated_at DESC LIMIT :limit;"
         
         query = text(query_str)
         
-        results = {"ids": [], "documents": [], "metadatas": []}
+        results = {
+            "ids": [],
+            "documents": [],
+            "metadatas": []
+        }
         with self.engine.connect() as conn:
             result_proxy = conn.execute(query, params)
             # .mappings() allows dict-like access
@@ -181,20 +185,20 @@ class PostgresDBAdapter(VectorDBAdapter):
                     "agent_name": row['agent_name'],
                     "event_timestamp": row["event_timestamp"].isoformat(),
                     "created_at": row['created_at'].isoformat(),
-                    # "updated_at": row['updated_at'].isoformat()
+                    "updated_at": row['updated_at'].isoformat()
                 })
         logger.info(results)
         return results
 
-    def query_by_similarity(self, collection_name, query_embedding, query_text=None, filters=None, top_k=20):
+    def query_by_similarity(self, collection_name, query_embeddings, query_texts=None, filters=None, top_k=20):
         
-        params = {"embedding": str(query_embedding), "top_k": top_k}
-        params.update(filters)
+        
+        # params.update(filters)
         
         where_sql = self._format_filters(filters=filters)
 
         # Similarity search, converting cosine distance to a similarity score.
-        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, 1 - (embedding <=> :embedding) AS similarity FROM {collection_name}"
+        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at, 1 - (embedding <=> :embedding) AS similarity FROM {collection_name}"
         if where_sql:
             query_str += where_sql
         query_str += " ORDER BY similarity DESC LIMIT :top_k;"
@@ -203,21 +207,37 @@ class PostgresDBAdapter(VectorDBAdapter):
 
         results = {"ids": [], "documents": [], "metadatas": [], "distances": []}
         with self.engine.connect() as conn:
-            result_proxy = conn.execute(query, params)
-            for row in result_proxy.mappings():
-                results["ids"].append(row['id'])
-                results["documents"].append(row['document'])
-                results["metadatas"].append({
-                    "user_id": row['user_id'],
-                    "app_id": row['app_id'],
-                    "session_id": row['session_id'],
-                    "agent_name": row['agent_name'],
-                    "event_timestamp": row["event_timestamp"].isoformat(),
-                    "created_at": row['created_at'].isoformat(),
-                    # "updated_at": row['updated_at'].isoformat()
-                })
-                # We return similarity score but keep the key 'distances' for API compatibility
-                results["distances"].append(row['similarity'])
+            for embedding in query_embeddings:
+                
+                params = {"embedding": str(embedding), "top_k": top_k}
+                if filters:
+                    params.update(filters)
+                
+                result_proxy = conn.execute(query, params)
+                # We return same format for API compatibility
+                ids = []
+                documents = []
+                metadatas = []
+                distances = []
+                
+                for row in result_proxy.mappings():
+                    ids.append(row['id'])
+                    documents.append(row['document'])
+                    metadatas.append({
+                        "user_id": row['user_id'],
+                        "app_id": row['app_id'],
+                        "session_id": row['session_id'],
+                        "agent_name": row['agent_name'],
+                        "event_timestamp": row["event_timestamp"].isoformat(),
+                        "created_at": row['created_at'].isoformat(),
+                        "updated_at": row['updated_at'].isoformat()
+                    })
+                    distances.append(row['similarity'])
+                
+                results["ids"].append(ids)
+                results["documents"].append(documents)
+                results["metadatas"].append(metadatas)
+                results["distances"].append(distances)
         
         return results
 
@@ -234,7 +254,7 @@ class PostgresDBAdapter(VectorDBAdapter):
             }
             for item in items
         ]
-        # TODO: Work on partial updates, either document or metadata
+
         update_stmt = text(f"""
             UPDATE {collection_name}
             SET
