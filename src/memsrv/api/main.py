@@ -1,7 +1,7 @@
 """Fast api entry point will be defined here"""
-import os
+import time
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from memsrv.api.routes import memory
@@ -61,6 +61,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(memory.create_memory_router(memory_service_instance), prefix="/api/v1")
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    """Middleware for some fastapi endpoints"""
+    start_time = time.perf_counter()
 
-# uvicorn memsrv.api.main:app --reload --host 0.0.0.0 --port 8090
+    client_host = request.client.host if request.client else "unknown"
+    logger.info(f"Client: {client_host}")
+
+    response = await call_next(request)
+
+    method = request.method
+    route = request.scope.get("route")
+    route_path = route.path if route else "unknown"
+
+    logger.info(f"Received request: {method} {route_path}")
+
+    process_time = time.perf_counter() - start_time
+    
+    logger.info(f"Request processed in {process_time:2f}s")
+    
+    response.headers["X-Process-Time"] = str(process_time)
+    
+    return response
+
+app.include_router(memory.create_memory_router(memory_service_instance), prefix="/api/v1")

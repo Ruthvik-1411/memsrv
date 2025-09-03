@@ -108,7 +108,7 @@ The service's behavior is configured through environment variables and the `src/
 
 The `google-adk` library has an in built tool called `PreloadMemoryTool` which preloads memory for a particular user into the session. This is automatically called when a request is sent to LLM. When a user sends a message to the agent, the `PreloadMemoryTool` fetches the similar memories to this user query and **appends** the retrieved messages to the system instructions. That way the when the LLM starts responding, it will have the context of previous sessions.
 
-In the `examples/adk_agent/custom_memory_tool.py` you can find the same implementation, but we fetch memories from our client which communicates with our memory service running on ``http://0.0.0.0:8090`. See `examples/shared/memory_client.py` for more info.
+In the `examples/adk_agent/custom_memory_tool.py` you can find the same implementation, but we fetch memories from our client which communicates with our memory service running on `http://localhost:8090`. See `examples/shared/memory_client.py` for more info.
 
 To get started, make sure the `memsrv` service is running, follow the steps [here](#running-the-server).
 ```bash
