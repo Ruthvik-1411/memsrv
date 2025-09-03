@@ -61,6 +61,14 @@ class ChromaDBAdapter(VectorDBAdapter):
         
         logger.info(f"Successfully added {len(items)} items to chroma collection.")
         return serialized_items["ids"]
+    
+    def get_by_ids(self, collection_name, ids):
+
+        collection = self.client.get_collection(name=collection_name)
+
+        result = collection.get(ids=ids)
+
+        return result
 
     def query_by_filter(self, collection_name, filters, limit):
         
@@ -71,46 +79,39 @@ class ChromaDBAdapter(VectorDBAdapter):
             where=where_clause if where_clause else None,
             limit=limit
         )
-        
-        logger.info(results)
+
         return results
 
-    def query_by_similarity(self, collection_name, query_embedding, query_text=None, filters=None, top_k=20):
+    def query_by_similarity(self, collection_name, query_embeddings, query_texts=None, filters=None, top_k=20):
 
         collection = self.client.get_collection(name=collection_name)
         where_clause = self._format_filters(filters)
 
         results = collection.query(
-            query_embeddings=[query_embedding],
+            query_embeddings=query_embeddings,
             n_results=top_k,
             where=where_clause if where_clause else None
         )
-        # Chroma supports multi queries in one call, so returns as a list of vals
-        # Since we are currently running a single query, we take the first result
-        if results.get("ids"):
-            results["ids"] = results["ids"][0]
-            results["documents"] = results["documents"][0]
-            results["metadatas"] = results["metadatas"][0]
-            results["distances"] = results["distances"][0]
-        else:
-            results["ids"], results["documents"], results["metadatas"], results["distances"] = [], [], [], []
-
+        
         return results
 
     def update(self, collection_name, items):
         
         collection = self.client.get_collection(name=collection_name)
-        serialized_items = serialize_items(items)
+        ids_to_update = [item.id for item in items]
+        documents = [item.document for item in items]
+        embeddings = [item.embedding for item in items]
+        metadatas = [{"updated_at": item.updated_at} for item in items]
         
         collection.update(
-            ids=serialized_items["ids"],
-            documents=serialized_items["documents"],
-            embeddings=serialized_items["embeddings"],
-            metadatas=serialized_items["metadatas"]
+            ids=ids_to_update,
+            documents=documents,
+            embeddings=embeddings,
+            metadatas=metadatas
         )
         
         logger.info(f"Successfully updated {len(items)} items to chroma collection.")
-        return serialized_items["ids"]
+        return ids_to_update
 
     def delete(self, collection_name, fact_ids):
         

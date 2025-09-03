@@ -1,12 +1,12 @@
 """To add MemoryService class to add facts and to db services"""
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Union
 
 from memsrv.core.extractor import parse_messages, extract_facts
 from memsrv.llms.base_llm import BaseLLM
 from memsrv.db.base_adapter import VectorDBAdapter
 from memsrv.embeddings.base_embedder import BaseEmbedding
 from memsrv.utils.logger import get_logger
-from memsrv.models.memory import MemoryMetadata, MemoryInDB
+from memsrv.models.memory import MemoryMetadata, MemoryInDB, MemoryUpdatePayload
 from memsrv.models.request import MemoryCreateRequest, MemoryUpdateRequest
 from memsrv.models.response import ActionConfirmation, MemoryResponse
 
@@ -72,27 +72,35 @@ class MemoryService:
         
         return memories
     
-    def search_memories_by_similarity(self, query: str, filters: Dict[str, Any] = None, limit: int = 20):
+    def search_memories_by_similarity(self, query_texts: Union[str, List[str]], filters: Dict[str, Any] = None, limit: int = 20):
         """Queries vector db and get memories similar to query and applies filters"""
-        query_embedding = self.embedder.generate_embeddings(texts=[query])
+        if isinstance(query_texts, str):
+            query_texts = [query_texts]
+        query_embeddings = self.embedder.generate_embeddings(texts=query_texts)
 
         results = self.db.query_by_similarity(collection_name="memories",
-                                              query_embedding=query_embedding[0],
+                                              query_embeddings=query_embeddings,
                                               filters=filters,
                                               top_k=limit)
         memories = []
 
-        for i in range(len(results.get("ids", []))):
-            memories.append(
-                MemoryResponse(
-                    id=results["ids"][i],
-                    document=results["documents"][i],
-                    metadata=results["metadatas"][i],
-                    similarity=results["distances"][i],
-                    created_at=results["metadatas"][i].get("created_at"),
-                    updated_at=results["metadatas"][i].get("updated_at")
+        for query_index in range(len(query_texts)):
+            ids = results["ids"][query_index]
+            documents = results["documents"][query_index]
+            metadatas = results["metadatas"][query_index]
+            distances = results["distances"][query_index]
+
+            for i in range(len(ids)):
+                memories.append(
+                    MemoryResponse(
+                        id=ids[i],
+                        document=documents[i],
+                        metadata=metadatas[i],
+                        similarity=distances[i],
+                        created_at=metadatas[i].get("created_at"),
+                        updated_at=metadatas[i].get("updated_at")
+                    )
                 )
-            )
         return memories
     
     def create_memories(self, data: MemoryCreateRequest):
@@ -137,18 +145,15 @@ class MemoryService:
     
     def update_memories(self, update_items: List[MemoryUpdateRequest]):
         """Updates memory with given id and fact content"""
+        
         new_facts = [items.document for items in update_items]
         new_embeddings = self.embedder.generate_embeddings(texts=new_facts)
 
-        # TODO: Partial update is allowed, either document or metadata or both
-        # should update only those that are provided, validate if id exists as well
-        items: List[MemoryInDB] = [
-            MemoryInDB(
+        items: List[MemoryUpdatePayload] = [
+            MemoryUpdatePayload(
                 id=update_item.id,
                 document=update_item.document,
-                embedding=new_embeddings[i],
-                metadata=update_item.metadata
-                # Get created at from existing record
+                embedding=new_embeddings[i]
             )
             for i, update_item in enumerate(update_items)
         ]
@@ -169,26 +174,20 @@ class MemoryService:
     def add_memories(self, facts: List[str], metadata: MemoryMetadata):
         """Adds memories to db after consolidating them"""
 
+        filters = metadata.filterable_dict()
+        similar_memories = self.search_memories_by_similarity(
+            query_texts=facts,
+            filters=filters,
+            limit=3
+        )
+        
         similar_memories_dict = {}
-        # TODO: Use batch similarity requests here
-        # Since we can batch embed facts and batch query(chroma)
-        # this seems to be most optmized path rather than embed and query
-        # for each item
-        for fact in facts:
-            # For each fact find top 3 similar memories
-            similar_memories = self.search_memories_by_similarity(
-                query=fact,
-                filters=metadata.filterable_dict(),
-                limit=3
-            )
-
-            for similar_memory in similar_memories:
-                # Add each existing memory to a dict and avoid repetition
-                if similar_memory.id not in similar_memories_dict:
-                    similar_memories_dict[similar_memory.id] = {
-                        "id": similar_memory.id,
-                        "document": similar_memory.document
-                    }
+        for memory in similar_memories:
+            if memory.id not in similar_memories_dict:
+                similar_memories_dict[memory.id] = {
+                    "id": memory.id,
+                    "document": memory.document
+                }
         
         similar_memory_items = list(similar_memories_dict.values())
 
@@ -227,9 +226,9 @@ class MemoryService:
                     memories_to_update.append(
                         MemoryUpdateRequest(
                             id=original_id,
-                            document=text,
-                            # FIXME: Might need to avoid overwriting metadata
-                            metadata=metadata
+                            document=text
+                            # YAGNI: Ignore metadata for update
+                            # create new one if needed
                         )
                     )
                 else:

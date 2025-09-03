@@ -149,6 +149,9 @@ class PostgresDBAdapter(VectorDBAdapter):
         logger.info(f"Successfully added/updated {len(items)} items in collection '{collection_name}'.")
         return [item.id for item in items]
     
+    def get_by_ids(self, collection_name, ids):
+        pass
+        # return super().get_by_id(collection_name, id)
 
     def query_by_filter(self, collection_name, filters, limit):
         params = {"limit": limit}
@@ -156,15 +159,19 @@ class PostgresDBAdapter(VectorDBAdapter):
         
         where_sql = self._format_filters(filters=filters)
         
-        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at FROM {collection_name}"
+        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at FROM {collection_name}"
         if where_sql:
             query_str += where_sql
-        # TODO: Change to use updated_at
-        query_str += " ORDER BY created_at DESC LIMIT :limit;"
+
+        query_str += " ORDER BY updated_at DESC LIMIT :limit;"
         
         query = text(query_str)
         
-        results = {"ids": [], "documents": [], "metadatas": []}
+        results = {
+            "ids": [],
+            "documents": [],
+            "metadatas": []
+        }
         with self.engine.connect() as conn:
             result_proxy = conn.execute(query, params)
             # .mappings() allows dict-like access
@@ -178,20 +185,20 @@ class PostgresDBAdapter(VectorDBAdapter):
                     "agent_name": row['agent_name'],
                     "event_timestamp": row["event_timestamp"].isoformat(),
                     "created_at": row['created_at'].isoformat(),
-                    # "updated_at": row['updated_at'].isoformat()
+                    "updated_at": row['updated_at'].isoformat()
                 })
         logger.info(results)
         return results
 
-    def query_by_similarity(self, collection_name, query_embedding, query_text=None, filters=None, top_k=20):
+    def query_by_similarity(self, collection_name, query_embeddings, query_texts=None, filters=None, top_k=20):
         
-        params = {"embedding": str(query_embedding), "top_k": top_k}
-        params.update(filters)
+        
+        # params.update(filters)
         
         where_sql = self._format_filters(filters=filters)
 
         # Similarity search, converting cosine distance to a similarity score.
-        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, 1 - (embedding <=> :embedding) AS similarity FROM {collection_name}"
+        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at, 1 - (embedding <=> :embedding) AS similarity FROM {collection_name}"
         if where_sql:
             query_str += where_sql
         query_str += " ORDER BY similarity DESC LIMIT :top_k;"
@@ -200,54 +207,59 @@ class PostgresDBAdapter(VectorDBAdapter):
 
         results = {"ids": [], "documents": [], "metadatas": [], "distances": []}
         with self.engine.connect() as conn:
-            result_proxy = conn.execute(query, params)
-            for row in result_proxy.mappings():
-                results["ids"].append(row['id'])
-                results["documents"].append(row['document'])
-                results["metadatas"].append({
-                    "user_id": row['user_id'],
-                    "app_id": row['app_id'],
-                    "session_id": row['session_id'],
-                    "agent_name": row['agent_name'],
-                    "event_timestamp": row["event_timestamp"].isoformat(),
-                    "created_at": row['created_at'].isoformat(),
-                    # "updated_at": row['updated_at'].isoformat()
-                })
-                # We return similarity score but keep the key 'distances' for API compatibility
-                results["distances"].append(row['similarity'])
+            for embedding in query_embeddings:
+                
+                params = {"embedding": str(embedding), "top_k": top_k}
+                if filters:
+                    params.update(filters)
+                
+                result_proxy = conn.execute(query, params)
+                # We return same format for API compatibility
+                ids = []
+                documents = []
+                metadatas = []
+                distances = []
+                
+                for row in result_proxy.mappings():
+                    ids.append(row['id'])
+                    documents.append(row['document'])
+                    metadatas.append({
+                        "user_id": row['user_id'],
+                        "app_id": row['app_id'],
+                        "session_id": row['session_id'],
+                        "agent_name": row['agent_name'],
+                        "event_timestamp": row["event_timestamp"].isoformat(),
+                        "created_at": row['created_at'].isoformat(),
+                        "updated_at": row['updated_at'].isoformat()
+                    })
+                    distances.append(row['similarity'])
+                
+                results["ids"].append(ids)
+                results["documents"].append(documents)
+                results["metadatas"].append(metadatas)
+                results["distances"].append(distances)
         
         return results
 
     def update(self, collection_name, items):
         
         self._ensure_collection_exists(collection_name)
-        serialized_items = serialize_items(items)
         
         data_to_update = [
             {
-                "id": serialized_items["ids"][i],
-                "document": serialized_items["documents"][i],
-                "embedding": str(serialized_items["embeddings"][i]),
-                "user_id": serialized_items["metadatas"][i]["user_id"],
-                "app_id": serialized_items["metadatas"][i]["app_id"],
-                "session_id": serialized_items["metadatas"][i]["session_id"],
-                "agent_name": serialized_items["metadatas"][i]["agent_name"],
-                "event_timestamp": serialized_items["metadatas"][i].get("event_timestamp"),
-                "updated_at": serialized_items["metadatas"][i]["updated_at"],
+                "id": item.id,
+                "document": item.document,
+                "embedding": str(item.embedding),
+                "updated_at": item.updated_at,
             }
-            for i in range(len(items))
+            for item in items
         ]
-        # TODO: Work on partial updates, either document or metadata
+
         update_stmt = text(f"""
             UPDATE {collection_name}
             SET
                 document = :document,
                 embedding = :embedding,
-                user_id = :user_id,
-                app_id = :app_id,
-                session_id = :session_id,
-                agent_name = :agent_name,
-                event_timestamp = :event_timestamp,
                 updated_at = :updated_at
             WHERE id = :id;
         """)
@@ -256,7 +268,7 @@ class PostgresDBAdapter(VectorDBAdapter):
             conn.execute(update_stmt, data_to_update)
 
         logger.info(f"Successfully updated {len(items)} items in collection '{collection_name}'.")
-        return serialized_items["ids"]
+        return [item.id for item in items]
     
     def delete(self, collection_name, fact_ids):
 
