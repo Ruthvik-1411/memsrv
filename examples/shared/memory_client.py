@@ -2,8 +2,11 @@
 import requests
 from typing import Dict, Any, List, Optional
 
+MEMORY_SERVICE_URL = "http://localhost:8090/api/v1"
+
 class MemoryClient:
-    def __init__(self, base_url: str = "http://localhost:8090/api/v1"):
+    """Memory client that communicates with our memory service"""
+    def __init__(self, base_url: str = MEMORY_SERVICE_URL):
         self.base_url = base_url.rstrip("/")
 
     def add_to_memory(self, messages: List[Dict[str, Any]], metadata: Dict[str, Any]) -> Dict[str, Any]:

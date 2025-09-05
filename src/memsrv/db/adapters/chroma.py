@@ -20,7 +20,7 @@ class ChromaDBAdapter(VectorDBAdapter):
                 "description": "Collection for memory service"
             }
         )
-    
+
     def _format_filters(self, filters: Dict[str, Any]) -> Dict[str, Any]:
         """
         Converts simple {k: v} filter dict into Chroma's query format with $and + $eq.
@@ -48,20 +48,20 @@ class ChromaDBAdapter(VectorDBAdapter):
         return True
 
     def add(self, collection_name, items):
-        
+
         collection = self.client.get_collection(name=collection_name)
         serialized_items = serialize_items(items)
-        
+
         collection.add(
             ids=serialized_items["ids"],
             documents=serialized_items["documents"],
             embeddings=serialized_items["embeddings"],
             metadatas=serialized_items["metadatas"]
         )
-        
+
         logger.info(f"Successfully added {len(items)} items to chroma collection.")
         return serialized_items["ids"]
-    
+
     def get_by_ids(self, collection_name, ids):
 
         collection = self.client.get_collection(name=collection_name)
@@ -71,10 +71,10 @@ class ChromaDBAdapter(VectorDBAdapter):
         return result
 
     def query_by_filter(self, collection_name, filters, limit):
-        
+
         collection = self.client.get_collection(name=collection_name)
         where_clause = self._format_filters(filters)
-        
+
         results = collection.get(
             where=where_clause if where_clause else None,
             limit=limit
@@ -92,31 +92,31 @@ class ChromaDBAdapter(VectorDBAdapter):
             n_results=top_k,
             where=where_clause if where_clause else None
         )
-        
+
         return results
 
     def update(self, collection_name, items):
-        
+
         collection = self.client.get_collection(name=collection_name)
         ids_to_update = [item.id for item in items]
         documents = [item.document for item in items]
         embeddings = [item.embedding for item in items]
         metadatas = [{"updated_at": item.updated_at} for item in items]
-        
+
         collection.update(
             ids=ids_to_update,
             documents=documents,
             embeddings=embeddings,
             metadatas=metadatas
         )
-        
+
         logger.info(f"Successfully updated {len(items)} items to chroma collection.")
         return ids_to_update
 
     def delete(self, collection_name, fact_ids):
-        
+
         collection = self.client.get_collection(name=collection_name)
         collection.delete(ids=fact_ids)
-        
+
         logger.info(f"Successfully deleted memory with id {fact_ids} from chroma collection")
         return fact_ids

@@ -6,7 +6,7 @@ from memsrv.models.memory import MemoryInDB, MemoryUpdatePayload
 class VectorDBAdapter(ABC):
     """Abstract interface for any vector DB provider."""
     # Format filters might not always be required, but we'll see
-    
+
     @abstractmethod
     def create_collection(self, name: str = "memories", metadata: Optional[Dict[str, Any]] = None):
         """Create a new collection (or get it if exists)."""
@@ -16,7 +16,7 @@ class VectorDBAdapter(ABC):
     def add(self, collection_name: str, items: List[MemoryInDB]) -> List[str]:
         """Add items (facts + metadata) into a collection."""
         pass
-    
+
     @abstractmethod
     def update(self, collection_name: str, items: List[MemoryUpdatePayload]):
         """Updates items at given with new data, fact_id should be provided"""

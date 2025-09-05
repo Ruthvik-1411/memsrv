@@ -27,7 +27,8 @@ class MemoryMetadata(BaseModel):
         return {
             "user_id": self.user_id,
             "app_id": self.app_id,
-            "session_id": self.session_id,
+            # We don't need session_id as a * filter
+            # "session_id": self.session_id,
             "agent_name": self.agent_name,
         }
 

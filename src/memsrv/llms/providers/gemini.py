@@ -1,9 +1,8 @@
 """generic classes to use gemini api providers"""
 import os
 from typing import Optional
-
-from google.genai.client import Client as geminiClient
 from google.genai import types
+from google.genai.client import Client as geminiClient
 from memsrv.llms.base_config import BaseLLMConfig
 from memsrv.llms.base_llm import BaseLLM
 
@@ -23,6 +22,7 @@ class GeminiModel(BaseLLM):
             message: str = None,
             response_format=None
             ):
+
         contents = []
         contents.append(
             types.Content(
@@ -30,6 +30,7 @@ class GeminiModel(BaseLLM):
                 role="user"
             )
         )
+
         generation_config = {
             "temperature": self.config.temperature,
             "max_output_tokens": self.config.max_output_tokens,

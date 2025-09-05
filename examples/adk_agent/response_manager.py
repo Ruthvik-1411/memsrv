@@ -1,5 +1,4 @@
 """Module that handles interaction with the agent, maintains session and query passing."""
-import asyncio
 import uuid
 import logging
 
@@ -92,8 +91,9 @@ class ResponseManager:
                 "result": "No final response received",
                 "error_message": str(e)
             }
-    
+
     async def dump_session_events(self, session_id):
+        """Dump session events"""
         session = await self.runner.session_service.get_session(
             app_name=self.agent.name,
             user_id=self.user_id,
@@ -102,11 +102,8 @@ class ResponseManager:
         parsed_events = []
         for event in session.events:
             if event.content and event.content.parts:
-                parsed_events.append(event.content.model_dump(exclude_none=True, mode='json')) 
-        # print(session.model_dump(exclude_none=True, mode='json'))
-        print(parsed_events)
+                parsed_events.append(event.content.model_dump(exclude_none=True, mode='json'))
 
-        # return session.model_dump(exclude_none=True, mode='json')
         return parsed_events
 
 async def test_agent():
@@ -116,16 +113,9 @@ async def test_agent():
     session_id = str(uuid.uuid4())
 
     first_query = "What are some trending topics in AI?"
-    # first_response = await response_manager.invoke_agent(session_id=session_id,
-    #                                                      query=first_query)
+
     first_response = response_manager.invoke_agent(session_id=session_id, query=first_query)
     async for response in first_response:
         logger.info(f"Events: {response}")
-    # logger.info(f"First response: {first_response}")
+    logger.info(f"First response: {first_response}")
 
-    # second_query = "What question did I ask you?"
-    # second_response = await response_manager.invoke_agent(session_id=session_id,
-    #                                                       query=second_query)
-    # logger.info(f"Second response: {second_response}")
-
-# asyncio.run(test_agent())

@@ -16,12 +16,14 @@ load_dotenv()
 logger = get_logger(__name__)
 
 def get_llm_instance():
+    """Get the llm instance based on config"""
     if LLM_SERVICE == "gemini":
         config = BaseLLMConfig(model_name="gemini-2.0-flash")
         return GeminiModel(config)
     raise ValueError(f"Unsupported LLM provider: {LLM_SERVICE}")
 
 def get_db_instance():
+    """Get the DB instance based on config"""
     if DB_SERVICE == "chroma":
         from memsrv.db.adapters.chroma import ChromaDBAdapter
         return ChromaDBAdapter(persist_dir="./chroma_db")
@@ -31,6 +33,7 @@ def get_db_instance():
     raise ValueError(f"Unsupported DB provider: {DB_SERVICE}")
 
 def get_embedding_instance():
+    """Get the embedding instance based on config"""
     if EMBEDDING_SERVICE == "gemini":
         return GeminiEmbedding(model_name="gemini-embedding-001")
     raise ValueError(f"Unsupported Embedding provider: {EMBEDDING_SERVICE}")
@@ -78,11 +81,11 @@ async def add_process_time_header(request: Request, call_next):
     logger.info(f"Received request: {method} {route_path}")
 
     process_time = time.perf_counter() - start_time
-    
+
     logger.info(f"Request processed in {process_time:2f}s")
-    
+
     response.headers["X-Process-Time"] = str(process_time)
-    
+
     return response
 
 app.include_router(memory.create_memory_router(memory_service_instance), prefix="/api/v1")

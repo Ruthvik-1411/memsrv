@@ -5,6 +5,7 @@ from typing import Optional
 
 @dataclass
 class BaseLLMConfig:
+    """Base config for LLM parameters"""
     model_name: Optional[str] = None
     api_key: Optional[str] = None
     temperature: float = 0.1

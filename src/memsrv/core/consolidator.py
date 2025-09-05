@@ -19,6 +19,7 @@ class Action(Enum):
     NOOP = "NOOP"
 
 class ConsolidationPlanItem(BaseModel):
+    """Single Item in the consolidation plan"""
     model_config = ConfigDict(use_enum_values=True)
 
     id: str = Field(description="ID of the original memory if it's part of the existing memory, if new fact a unique value")
@@ -27,6 +28,7 @@ class ConsolidationPlanItem(BaseModel):
     old_text: Optional[str] = Field(description="The old text of the memory in case of updation", default=None)
 
 class ConsolidationPlan(BaseModel):
+    """Complete plan for consolidating memories"""
     plan: List[ConsolidationPlanItem]
 
 

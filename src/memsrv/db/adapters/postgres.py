@@ -154,6 +154,7 @@ class PostgresDBAdapter(VectorDBAdapter):
         # return super().get_by_id(collection_name, id)
 
     def query_by_filter(self, collection_name, filters, limit):
+        
         params = {"limit": limit}
         params.update(filters)
         
@@ -191,9 +192,6 @@ class PostgresDBAdapter(VectorDBAdapter):
         return results
 
     def query_by_similarity(self, collection_name, query_embeddings, query_texts=None, filters=None, top_k=20):
-        
-        
-        # params.update(filters)
         
         where_sql = self._format_filters(filters=filters)
 

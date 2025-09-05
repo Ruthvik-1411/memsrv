@@ -29,7 +29,7 @@ if "user_id" not in st.session_state:
     if st.button("Start session with this user id", disabled=(not selected_user)):
         st.session_state.user_id = selected_user
         st.rerun()
-    
+
     st.stop()
 
 # --- Session State Initialization ---
