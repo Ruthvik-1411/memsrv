@@ -1,13 +1,13 @@
 """generic classes to use gemini api providers"""
 import os
 from typing import Optional
-
-from google.genai.client import Client as geminiClient
 from google.genai import types
+from google.genai.client import Client as geminiClient
 from memsrv.llms.base_config import BaseLLMConfig
 from memsrv.llms.base_llm import BaseLLM
 
 class GeminiModel(BaseLLM):
+    """Generation module for invoking gemini API"""
     def __init__(self, config: Optional[BaseLLMConfig]=None):
         super().__init__(config)
 
@@ -17,12 +17,11 @@ class GeminiModel(BaseLLM):
         api_key = self.config.api_key or os.getenv("GOOGLE_API_KEY")
         self.client = geminiClient(api_key=api_key)
 
-    def generate_response(
-            self,
-            system_instruction: str = None,
-            message: str = None,
-            response_format=None
-            ):
+    def generate_response(self,
+                          message: str,
+                          system_instruction: str = None,
+                          response_format=None):
+
         contents = []
         contents.append(
             types.Content(
@@ -30,6 +29,7 @@ class GeminiModel(BaseLLM):
                 role="user"
             )
         )
+
         generation_config = {
             "temperature": self.config.temperature,
             "max_output_tokens": self.config.max_output_tokens,

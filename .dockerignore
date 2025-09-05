@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+LICENSE
+Milestones.md
+examples/
+scratchpad/

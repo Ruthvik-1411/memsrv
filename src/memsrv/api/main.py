@@ -1,7 +1,8 @@
 """Fast api entry point will be defined here"""
-import os
+# pylint: disable=import-outside-toplevel
+import time
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from memsrv.api.routes import memory
@@ -16,21 +17,24 @@ load_dotenv()
 logger = get_logger(__name__)
 
 def get_llm_instance():
+    """Get the llm instance based on config"""
     if LLM_SERVICE == "gemini":
         config = BaseLLMConfig(model_name="gemini-2.0-flash")
         return GeminiModel(config)
     raise ValueError(f"Unsupported LLM provider: {LLM_SERVICE}")
 
 def get_db_instance():
+    """Get the DB instance based on config"""
     if DB_SERVICE == "chroma":
         from memsrv.db.adapters.chroma import ChromaDBAdapter
         return ChromaDBAdapter(persist_dir="./chroma_db")
-    elif DB_SERVICE == "postgres":
+    if DB_SERVICE == "postgres":
         from memsrv.db.adapters.postgres import PostgresDBAdapter
         return PostgresDBAdapter(connection_string=CONNECTION_STRING)
     raise ValueError(f"Unsupported DB provider: {DB_SERVICE}")
 
 def get_embedding_instance():
+    """Get the embedding instance based on config"""
     if EMBEDDING_SERVICE == "gemini":
         return GeminiEmbedding(model_name="gemini-embedding-001")
     raise ValueError(f"Unsupported Embedding provider: {EMBEDDING_SERVICE}")
@@ -61,6 +65,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(memory.create_memory_router(memory_service_instance), prefix="/api/v1")
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    """Middleware for some fastapi endpoints"""
+    start_time = time.perf_counter()
 
-# uvicorn memsrv.api.main:app --reload --host 0.0.0.0 --port 8090
+    client_host = request.client.host if request.client else "unknown"
+    logger.info(f"Client: {client_host}")
+
+    response = await call_next(request)
+
+    method = request.method
+    route = request.scope.get("route")
+    route_path = route.path if route else "unknown"
+
+    logger.info(f"Received request: {method} {route_path}")
+
+    process_time = time.perf_counter() - start_time
+
+    logger.info(f"Request processed in {process_time:2f}s")
+
+    response.headers["X-Process-Time"] = str(process_time)
+
+    return response
+
+app.include_router(memory.create_memory_router(memory_service_instance), prefix="/api/v1")

@@ -1,4 +1,5 @@
 """To add MemoryService class to add facts and to db services"""
+# pylint: disable=too-many-locals, too-many-branches
 from typing import List, Dict, Optional, Any, Union
 
 from memsrv.core.extractor import parse_messages, extract_facts
@@ -15,9 +16,10 @@ from memsrv.core.consolidator import consolidate_facts
 logger = get_logger(__name__)
 
 class MemoryService:
+    """The core service that handles extraction and consolidation of memories"""
     def __init__(self, llm: BaseLLM, db_adapter: VectorDBAdapter, embedder: BaseEmbedding):
         """Initializes the MemoryService with dependency injection.
-        
+
         Args:
             llm: An instance of a class that inherits from BaseLLM.
             db_adapter: An instance of a class that inherits from VectorDBAdapter.
@@ -26,8 +28,11 @@ class MemoryService:
         self.llm = llm
         self.db = db_adapter
         self.embedder = embedder
-    
-    def format_memory_response(self, fact_id: str, action: str,  fact_content: Optional[str]=None) -> ActionConfirmation:
+
+    def format_memory_response(self,
+                               fact_id: str,
+                               action: str,
+                               fact_content: Optional[str]=None) -> ActionConfirmation:
         """Formats the action taken for memory"""
         return ActionConfirmation(
             id=fact_id,
@@ -35,7 +40,10 @@ class MemoryService:
             status=action
         )
 
-    def add_facts_from_conversation(self, messages: List, metadata: MemoryMetadata, consolidate: bool = False) -> list[str]:
+    def add_facts_from_conversation(self,
+                                    messages: List,
+                                    metadata: MemoryMetadata,
+                                    consolidate: bool = False) -> list[str]:
         """Extracts facts from conversations and adds them to vector DB"""
         parsed_messages = parse_messages(messages)
         if not parsed_messages.strip():
@@ -44,7 +52,7 @@ class MemoryService:
         facts = extract_facts(parsed_messages, self.llm)
         if not facts:
             return []
-        
+
         if consolidate:
             response_action = self.add_memories(facts=facts, metadata=metadata)
         else:
@@ -53,7 +61,7 @@ class MemoryService:
             response_action = self.create_memories(data=memories_to_create)
 
         return response_action
-    
+
     def search_memories_by_filter(self, filters: Dict[str, Any] = None, limit: int = 20):
         """Queries vector db with provided filters"""
 
@@ -69,13 +77,18 @@ class MemoryService:
                     updated_at=results["metadatas"][i].get("updated_at")
                 )
             )
-        
+
         return memories
-    
-    def search_memories_by_similarity(self, query_texts: Union[str, List[str]], filters: Dict[str, Any] = None, limit: int = 20):
+
+    def search_memories_by_similarity(self,
+                                      query_texts: Union[str, List[str]],
+                                      filters: Dict[str, Any] = None,
+                                      limit: int = 20):
         """Queries vector db and get memories similar to query and applies filters"""
+
         if isinstance(query_texts, str):
             query_texts = [query_texts]
+
         query_embeddings = self.embedder.generate_embeddings(texts=query_texts)
 
         results = self.db.query_by_similarity(collection_name="memories",
@@ -84,13 +97,13 @@ class MemoryService:
                                               top_k=limit)
         memories = []
 
-        for query_index in range(len(query_texts)):
+        for query_index in range(len(query_texts)): # pylint: disable=consider-using-enumerate
             ids = results["ids"][query_index]
             documents = results["documents"][query_index]
             metadatas = results["metadatas"][query_index]
             distances = results["distances"][query_index]
 
-            for i in range(len(ids)):
+            for i in range(len(ids)): # pylint: disable=consider-using-enumerate
                 memories.append(
                     MemoryResponse(
                         id=ids[i],
@@ -101,8 +114,9 @@ class MemoryService:
                         updated_at=metadatas[i].get("updated_at")
                     )
                 )
+
         return memories
-    
+
     def create_memories(self, data: MemoryCreateRequest):
         """Directly creates memories and adds to DB"""
 
@@ -117,8 +131,9 @@ class MemoryService:
             )
             for i, fact in enumerate(facts)
         ]
-        
+
         added_memories_id = self.db.add(collection_name="memories", items=items)
+
         response = []
         for i, fact in enumerate(facts):
             response.append(
@@ -128,11 +143,14 @@ class MemoryService:
                     action="CREATED"
                 )
             )
+
         return response
 
     def delete_memories(self, memory_ids: List[str]):
         """Delete memories from collection"""
+
         result = self.db.delete(collection_name="memories", fact_ids=memory_ids)
+
         response = []
         for fact_id in result:
             response.append(
@@ -141,11 +159,12 @@ class MemoryService:
                     action="DELETED"
                 )
             )
+
         return response
-    
+
     def update_memories(self, update_items: List[MemoryUpdateRequest]):
         """Updates memory with given id and fact content"""
-        
+
         new_facts = [items.document for items in update_items]
         new_embeddings = self.embedder.generate_embeddings(texts=new_facts)
 
@@ -169,6 +188,7 @@ class MemoryService:
                     action="UPDATED"
                 )
             )
+
         return response
 
     def add_memories(self, facts: List[str], metadata: MemoryMetadata):
@@ -180,7 +200,7 @@ class MemoryService:
             filters=filters,
             limit=3
         )
-        
+
         similar_memories_dict = {}
         for memory in similar_memories:
             if memory.id not in similar_memories_dict:
@@ -188,30 +208,33 @@ class MemoryService:
                     "id": memory.id,
                     "document": memory.document
                 }
-        
+
         similar_memory_items = list(similar_memories_dict.values())
 
         temporary_id_map = {}
 
         for i, memory_item in enumerate(similar_memory_items):
             temporary_id_map[str(i)] = memory_item["id"]
-        
+
         existing_memories = [
-            { "id": str(i), "text": memory_item["document"]} for i, memory_item in enumerate(similar_memory_items)
+            { "id": str(i), "text": memory_item["document"]}
+            for i, memory_item in enumerate(similar_memory_items)
         ]
 
         logger.info(f"New facts: {facts}")
         logger.info(f"Existing Memories: {existing_memories}")
 
-        consolidation_result = consolidate_facts(new_facts=facts, existing_memories=existing_memories, llm=self.llm)
-        logger.info(f"Final result: {consolidation_result.get('plan')}")
+        consolidation_result = consolidate_facts(new_facts=facts,
+                                                 existing_memories=existing_memories,
+                                                 llm=self.llm)
+        logger.info(f"Consolidation Plan: {consolidation_result.get('plan')}")
         memories_to_add = []
         memories_to_update = []
         memories_to_delete = []
         response_actions = []
 
         for plan_item in consolidation_result.get("plan", []):
-            
+
             temporary_id = plan_item.get("id")
             text = plan_item.get("text")
             action = plan_item.get("action")
@@ -240,16 +263,17 @@ class MemoryService:
                     logger.info(f"Deleting {original_id}")
                 else:
                     logger.error("Invalid `id` provided by llm, skipping deletion.")
+
         if memories_to_add:
             create_request = MemoryCreateRequest(documents=memories_to_add, metadata=metadata)
             response_actions.extend(self.create_memories(create_request))
-            
+
         if memories_to_update:
             response_actions.extend(self.update_memories(memories_to_update))
-            
+
         if memories_to_delete:
             response_actions.extend(self.delete_memories(memories_to_delete))
-        
+
         logger.info(response_actions)
-       
+
         return response_actions

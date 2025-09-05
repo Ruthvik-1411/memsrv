@@ -1,4 +1,5 @@
 """Postgres with pgvector implementation"""
+# pylint: disable=too-many-positional-arguments, too-many-locals, signature-differs, line-too-long
 import os
 from typing import Dict, Any, Optional
 
@@ -17,12 +18,12 @@ class PostgresDBAdapter(VectorDBAdapter):
         self.connection_string = connection_string or os.getenv("DATABASE_URL")
         if not self.connection_string:
             raise ValueError("Connection string missing, either set it as env var or pass it.")
-    
+
         # The engine is created once and manages the connection pool.
         self.engine = create_engine(self.connection_string)
         self._collections_cache = set()
         self._setup_database()
-    
+
     def _setup_database(self):
         """Ensures the pgvector extension is enabled in the database."""
         try:
@@ -33,13 +34,13 @@ class PostgresDBAdapter(VectorDBAdapter):
         except exc.SQLAlchemyError as e:
             logger.error(f"Failed to connect to PostgreSQL or enable extension: {e}")
             raise ConnectionError("Could not set up the database connection.") from e
-    
+
     def _ensure_collection_exists(self, name: str):
         """Checks if a collection (table) has been initialized, and creates it if not."""
         if name not in self._collections_cache:
             self.create_collection(name)
             self._collections_cache.add(name)
-    
+
     def _format_filters(self, filters: Dict[str, Any] = None ) -> str:
         """Formats filter dict to sql where statements"""
         if filters:
@@ -57,7 +58,7 @@ class PostgresDBAdapter(VectorDBAdapter):
         vector_size = 768
         index_name = f"{name}_embedding_idx"
         index_exists = False
-        
+
         with self.engine.begin() as conn:
             logger.info(f"Initializing collection '{name}'...")
             # TODO: Table columns should be inferred from metadata datamodel
@@ -104,15 +105,15 @@ class PostgresDBAdapter(VectorDBAdapter):
                 # Catch a potential race condition where another process creates the index
                 # after our check but before this command runs.
                 if "already exists" in str(e).lower():
-                        logger.warning(f"Index '{index_name}' was created by another process. Continuing.")
+                    logger.warning(f"Index '{index_name}' was created by another process. Continuing.")
                 else:
-                    raise ValueError(e)
+                    raise ValueError(e) from e
 
     def add(self, collection_name, items):
 
         self._ensure_collection_exists(collection_name)
         serialized_items = serialize_items(items)
-        
+
         # Prepare data for bulk insert
         data_to_insert = [
             {
@@ -145,28 +146,29 @@ class PostgresDBAdapter(VectorDBAdapter):
 
         with self.engine.begin() as conn:
             conn.execute(insert_stmt, data_to_insert)
-        
+
         logger.info(f"Successfully added/updated {len(items)} items in collection '{collection_name}'.")
         return [item.id for item in items]
-    
+
     def get_by_ids(self, collection_name, ids):
         pass
         # return super().get_by_id(collection_name, id)
 
     def query_by_filter(self, collection_name, filters, limit):
+
         params = {"limit": limit}
         params.update(filters)
-        
+
         where_sql = self._format_filters(filters=filters)
-        
+
         query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at FROM {collection_name}"
         if where_sql:
             query_str += where_sql
 
         query_str += " ORDER BY updated_at DESC LIMIT :limit;"
-        
+
         query = text(query_str)
-        
+
         results = {
             "ids": [],
             "documents": [],
@@ -190,11 +192,13 @@ class PostgresDBAdapter(VectorDBAdapter):
         logger.info(results)
         return results
 
-    def query_by_similarity(self, collection_name, query_embeddings, query_texts=None, filters=None, top_k=20):
-        
-        
-        # params.update(filters)
-        
+    def query_by_similarity(self,
+                            collection_name,
+                            query_embeddings,
+                            query_texts=None,
+                            filters=None,
+                            top_k=20):
+
         where_sql = self._format_filters(filters=filters)
 
         # Similarity search, converting cosine distance to a similarity score.
@@ -202,24 +206,24 @@ class PostgresDBAdapter(VectorDBAdapter):
         if where_sql:
             query_str += where_sql
         query_str += " ORDER BY similarity DESC LIMIT :top_k;"
-        
+
         query = text(query_str)
 
         results = {"ids": [], "documents": [], "metadatas": [], "distances": []}
         with self.engine.connect() as conn:
             for embedding in query_embeddings:
-                
+
                 params = {"embedding": str(embedding), "top_k": top_k}
                 if filters:
                     params.update(filters)
-                
+
                 result_proxy = conn.execute(query, params)
                 # We return same format for API compatibility
                 ids = []
                 documents = []
                 metadatas = []
                 distances = []
-                
+
                 for row in result_proxy.mappings():
                     ids.append(row['id'])
                     documents.append(row['document'])
@@ -233,18 +237,18 @@ class PostgresDBAdapter(VectorDBAdapter):
                         "updated_at": row['updated_at'].isoformat()
                     })
                     distances.append(row['similarity'])
-                
+
                 results["ids"].append(ids)
                 results["documents"].append(documents)
                 results["metadatas"].append(metadatas)
                 results["distances"].append(distances)
-        
+
         return results
 
     def update(self, collection_name, items):
-        
+
         self._ensure_collection_exists(collection_name)
-        
+
         data_to_update = [
             {
                 "id": item.id,
@@ -269,7 +273,7 @@ class PostgresDBAdapter(VectorDBAdapter):
 
         logger.info(f"Successfully updated {len(items)} items in collection '{collection_name}'.")
         return [item.id for item in items]
-    
+
     def delete(self, collection_name, fact_ids):
 
         self._ensure_collection_exists(collection_name)

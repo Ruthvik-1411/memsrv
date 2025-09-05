@@ -1,4 +1,5 @@
 """Consolidates facts with existing facts using LLM"""
+# pylint: disable=line-too-long
 from enum import Enum
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
@@ -19,6 +20,7 @@ class Action(Enum):
     NOOP = "NOOP"
 
 class ConsolidationPlanItem(BaseModel):
+    """Single Item in the consolidation plan"""
     model_config = ConfigDict(use_enum_values=True)
 
     id: str = Field(description="ID of the original memory if it's part of the existing memory, if new fact a unique value")
@@ -27,10 +29,13 @@ class ConsolidationPlanItem(BaseModel):
     old_text: Optional[str] = Field(description="The old text of the memory in case of updation", default=None)
 
 class ConsolidationPlan(BaseModel):
+    """Complete plan for consolidating memories"""
     plan: List[ConsolidationPlanItem]
 
 
-def consolidate_facts(new_facts: List[str], existing_memories: List[Dict[str, Any]], llm: BaseLLM) -> list[str]:
+def consolidate_facts(new_facts: List[str],
+                      existing_memories: List[Dict[str, Any]],
+                      llm: BaseLLM) -> list[str]:
     """Extracts facts using the provided LLM and provides a consolidation plan"""
 
     message = f"""Now, consolidate the facts using the following input:

@@ -1,4 +1,5 @@
 """Base class for embeddings"""
+# pylint: disable=unnecessary-pass
 from abc import ABC, abstractmethod
 from typing import List
 

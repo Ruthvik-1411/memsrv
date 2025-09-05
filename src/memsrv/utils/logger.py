@@ -9,4 +9,5 @@ logging.basicConfig(
 )
 
 def get_logger(name: str):
+    """Common logger for all files"""
     return logging.getLogger(name)

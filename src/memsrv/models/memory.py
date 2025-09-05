@@ -1,8 +1,9 @@
 """data models for facts, memories and api services will be added here"""
+# pylint: disable=line-too-long
 import uuid
+from typing import Optional, List
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field
-from typing import Optional, List
 
 def get_current_time():
     """Gets current UTC time in iso format"""
@@ -27,7 +28,8 @@ class MemoryMetadata(BaseModel):
         return {
             "user_id": self.user_id,
             "app_id": self.app_id,
-            "session_id": self.session_id,
+            # We don't need session_id as a * filter
+            # "session_id": self.session_id,
             "agent_name": self.agent_name,
         }
 

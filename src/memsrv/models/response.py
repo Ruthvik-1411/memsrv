@@ -1,6 +1,6 @@
 """API response data models"""
-from pydantic import BaseModel
 from typing import Optional, List, Literal
+from pydantic import BaseModel
 
 from memsrv.models.memory import MemoryMetadata
 
