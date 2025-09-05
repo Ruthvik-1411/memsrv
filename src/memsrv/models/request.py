@@ -1,6 +1,7 @@
 """API Request data models"""
+# pylint: disable=line-too-long
+from typing import Dict, List, Any
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, List, Any
 from pydantic.config import ConfigDict
 
 from memsrv.models.memory import MemoryMetadata

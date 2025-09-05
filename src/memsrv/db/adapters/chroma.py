@@ -1,4 +1,5 @@
 """Chroma db implementation"""
+# pylint: disable=too-many-positional-arguments
 from typing import Dict, Any
 import chromadb
 from memsrv.utils.logger import get_logger
@@ -36,11 +37,11 @@ class ChromaDBAdapter(VectorDBAdapter):
                     for key, value in filters.items()
                 ]
             }
-        else:
-            return filters
+        
+        return filters
 
     def create_collection(self, name, metadata):
-        """Create a chroma collection"""
+
         # We should use this when we want to fix and always use the same collection
         # In some cases we might create them based on request params, this will help
         # TODO: Change default configuration of L2 to cosine
@@ -82,7 +83,12 @@ class ChromaDBAdapter(VectorDBAdapter):
 
         return results
 
-    def query_by_similarity(self, collection_name, query_embeddings, query_texts=None, filters=None, top_k=20):
+    def query_by_similarity(self,
+                            collection_name,
+                            query_embeddings,
+                            query_texts=None,
+                            filters=None,
+                            top_k=20):
 
         collection = self.client.get_collection(name=collection_name)
         where_clause = self._format_filters(filters)

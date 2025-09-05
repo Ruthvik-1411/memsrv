@@ -1,4 +1,5 @@
 """Fast api entry point will be defined here"""
+# pylint: disable=import-outside-toplevel
 import time
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
@@ -27,7 +28,7 @@ def get_db_instance():
     if DB_SERVICE == "chroma":
         from memsrv.db.adapters.chroma import ChromaDBAdapter
         return ChromaDBAdapter(persist_dir="./chroma_db")
-    elif DB_SERVICE == "postgres":
+    if DB_SERVICE == "postgres":
         from memsrv.db.adapters.postgres import PostgresDBAdapter
         return PostgresDBAdapter(connection_string=CONNECTION_STRING)
     raise ValueError(f"Unsupported DB provider: {DB_SERVICE}")

@@ -28,7 +28,7 @@ def create_memory_router(memory_service: MemoryService):
             }
         except Exception as e:
             logger.exception(f"An error has occured when adding to memory: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     @router.get("/memories", response_model=GetMemoriesResponse)
     def retrieve_memories_by_metadata(
@@ -55,7 +55,7 @@ def create_memory_router(memory_service: MemoryService):
             return GetMemoriesResponse(memories=memories)
         except Exception as e:
             logger.exception(f"An error has occured when searching memory: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     @router.get("/memories/similar", response_model=GetMemoriesResponse)
     def retrieve_memories_by_similarity(
@@ -83,7 +83,7 @@ def create_memory_router(memory_service: MemoryService):
             return GetMemoriesResponse(memories=memories)
         except Exception as e:
             logger.exception(f"An error has occured when searching memory: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     @router.post("/memories/create", response_model=MemoriesActionResponse)
     def create_memories(request: MemoryCreateRequest):
@@ -96,7 +96,7 @@ def create_memory_router(memory_service: MemoryService):
             }
         except Exception as e:
             logger.exception(f"An error has occured when updating memory: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     @router.put("/memories/update", response_model=MemoriesActionResponse)
     def update_memories(items: List[MemoryUpdateRequest]):
@@ -110,7 +110,7 @@ def create_memory_router(memory_service: MemoryService):
             }
         except Exception as e:
             logger.exception(f"An error has occured when updating memory: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     @router.delete("/memories/delete", response_model=MemoriesActionResponse)
     def delete_memories(ids: List[str]):
@@ -124,6 +124,6 @@ def create_memory_router(memory_service: MemoryService):
             }
         except Exception as e:
             logger.exception(f"An error has occured when deleting memory: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
     return router

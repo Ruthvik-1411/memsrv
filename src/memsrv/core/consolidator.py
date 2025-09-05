@@ -1,4 +1,5 @@
 """Consolidates facts with existing facts using LLM"""
+# pylint: disable=line-too-long
 from enum import Enum
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
@@ -32,7 +33,9 @@ class ConsolidationPlan(BaseModel):
     plan: List[ConsolidationPlanItem]
 
 
-def consolidate_facts(new_facts: List[str], existing_memories: List[Dict[str, Any]], llm: BaseLLM) -> list[str]:
+def consolidate_facts(new_facts: List[str],
+                      existing_memories: List[Dict[str, Any]],
+                      llm: BaseLLM) -> list[str]:
     """Extracts facts using the provided LLM and provides a consolidation plan"""
 
     message = f"""Now, consolidate the facts using the following input:

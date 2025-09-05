@@ -108,7 +108,7 @@ class ResponseManager:
 
 async def test_agent():
     """Utils function to test the agent using response manager"""
-    response_manager = ResponseManager()
+    response_manager = ResponseManager(user_id="u_123")
 
     session_id = str(uuid.uuid4())
 
@@ -118,4 +118,3 @@ async def test_agent():
     async for response in first_response:
         logger.info(f"Events: {response}")
     logger.info(f"First response: {first_response}")
-

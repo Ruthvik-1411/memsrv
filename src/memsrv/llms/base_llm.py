@@ -1,3 +1,5 @@
+"""Base class for llm interaction"""
+# pylint: disable=unnecessary-pass
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Union
 
@@ -15,6 +17,6 @@ class BaseLLM(ABC):
             self.config = BaseLLMConfig()
 
     @abstractmethod
-    def generate_response(self, *args, **kwargs):
+    def generate_response(self, message: str, system_instruction: str = None, response_format=None):
         """Generates a response from the model"""
         pass

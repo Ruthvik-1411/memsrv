@@ -1,6 +1,6 @@
 """Common http client side implementation for memory service"""
-import requests
 from typing import Dict, Any, List, Optional
+import requests
 
 MEMORY_SERVICE_URL = "http://localhost:8090/api/v1"
 
@@ -9,7 +9,9 @@ class MemoryClient:
     def __init__(self, base_url: str = MEMORY_SERVICE_URL):
         self.base_url = base_url.rstrip("/")
 
-    def add_to_memory(self, messages: List[Dict[str, Any]], metadata: Dict[str, Any]) -> Dict[str, Any]:
+    def add_to_memory(self,
+                      messages: List[Dict[str, Any]],
+                      metadata: Dict[str, Any]) -> Dict[str, Any]:
         """
         Adds conversation messages + metadata to memory service.
         messages format: list of {role: str, content: str}, see events.json
@@ -40,7 +42,9 @@ class MemoryClient:
             "app_id": app_id,
             "limit": limit
         }
-        response = requests.get(url, params={key: value for key, value in params.items() if value is not None})
+        response = requests.get(url,
+                                params={key: value for key, value in params.items()
+                                        if value is not None})
         # TODO: Need to add better reading of errors
         response.raise_for_status()
         return response.json()

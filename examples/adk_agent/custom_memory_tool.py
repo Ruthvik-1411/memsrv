@@ -1,4 +1,5 @@
 """A custom implementation for PreLoadMemoryTool() of google-adk"""
+# pylint: disable=protected-access
 from typing_extensions import override
 
 from google.adk.tools.base_tool import BaseTool
@@ -16,17 +17,17 @@ class CustomMemoryTool(BaseTool):
 
     @override
     async def process_llm_request(self, *, tool_context: ToolContext, llm_request: LlmRequest):
-
+        """Intervenes in an llm request and injects memories into context"""
         # Get the details for this user/session/app
-        session_id = tool_context._invocation_context.session.id
+        # session_id = tool_context._invocation_context.session.id
         user_id = tool_context._invocation_context.user_id
         app_name = tool_context._invocation_context.app_name
-        agent_name = tool_context._invocation_context.agent.name
+        # agent_name = tool_context._invocation_context.agent.name
 
         # print(f"Details: {session_id}::{user_id}::{app_name}::{agent_name}")
         user_content = tool_context.user_content
         user_query = user_content.parts[0].text
-        # print("User query:", user_query)
+        print("User query:", user_query)
 
         # For testing we can hardcode this and comment below logic for fetching from memory client
         # memory_text = "I like watching action movies.\n My name is ruths and I am a student."

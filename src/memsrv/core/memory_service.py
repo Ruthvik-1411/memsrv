@@ -1,4 +1,5 @@
 """To add MemoryService class to add facts and to db services"""
+# pylint: disable=too-many-locals, too-many-branches
 from typing import List, Dict, Optional, Any, Union
 
 from memsrv.core.extractor import parse_messages, extract_facts
@@ -28,7 +29,10 @@ class MemoryService:
         self.db = db_adapter
         self.embedder = embedder
 
-    def format_memory_response(self, fact_id: str, action: str,  fact_content: Optional[str]=None) -> ActionConfirmation:
+    def format_memory_response(self,
+                               fact_id: str,
+                               action: str,
+                               fact_content: Optional[str]=None) -> ActionConfirmation:
         """Formats the action taken for memory"""
         return ActionConfirmation(
             id=fact_id,
@@ -36,7 +40,10 @@ class MemoryService:
             status=action
         )
 
-    def add_facts_from_conversation(self, messages: List, metadata: MemoryMetadata, consolidate: bool = False) -> list[str]:
+    def add_facts_from_conversation(self,
+                                    messages: List,
+                                    metadata: MemoryMetadata,
+                                    consolidate: bool = False) -> list[str]:
         """Extracts facts from conversations and adds them to vector DB"""
         parsed_messages = parse_messages(messages)
         if not parsed_messages.strip():
@@ -73,7 +80,10 @@ class MemoryService:
 
         return memories
 
-    def search_memories_by_similarity(self, query_texts: Union[str, List[str]], filters: Dict[str, Any] = None, limit: int = 20):
+    def search_memories_by_similarity(self,
+                                      query_texts: Union[str, List[str]],
+                                      filters: Dict[str, Any] = None,
+                                      limit: int = 20):
         """Queries vector db and get memories similar to query and applies filters"""
 
         if isinstance(query_texts, str):
@@ -87,7 +97,7 @@ class MemoryService:
                                               top_k=limit)
         memories = []
 
-        for query_index in range(len(query_texts)):
+        for query_index in range(len(query_texts)): # pylint: disable=consider-using-enumerate
             ids = results["ids"][query_index]
             documents = results["documents"][query_index]
             metadatas = results["metadatas"][query_index]
@@ -207,7 +217,8 @@ class MemoryService:
             temporary_id_map[str(i)] = memory_item["id"]
 
         existing_memories = [
-            { "id": str(i), "text": memory_item["document"]} for i, memory_item in enumerate(similar_memory_items)
+            { "id": str(i), "text": memory_item["document"]}
+            for i, memory_item in enumerate(similar_memory_items)
         ]
 
         logger.info(f"New facts: {facts}")

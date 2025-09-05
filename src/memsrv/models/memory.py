@@ -1,8 +1,9 @@
 """data models for facts, memories and api services will be added here"""
+# pylint: disable=line-too-long
 import uuid
+from typing import Optional, List
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field
-from typing import Optional, List
 
 def get_current_time():
     """Gets current UTC time in iso format"""

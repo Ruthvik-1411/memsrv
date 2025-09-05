@@ -1,6 +1,6 @@
 """Main file for starting the server"""
-import uvicorn
 import argparse
+import uvicorn
 
 if __name__ == "__main__":
 
