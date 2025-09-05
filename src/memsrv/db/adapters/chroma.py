@@ -1,5 +1,5 @@
 """Chroma db implementation"""
-# pylint: disable=too-many-positional-arguments
+# pylint: disable=too-many-positional-arguments, signature-differs
 from typing import Dict, Any
 import chromadb
 from memsrv.utils.logger import get_logger
@@ -37,7 +37,7 @@ class ChromaDBAdapter(VectorDBAdapter):
                     for key, value in filters.items()
                 ]
             }
-        
+
         return filters
 
     def create_collection(self, name, metadata):

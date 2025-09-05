@@ -103,7 +103,7 @@ class MemoryService:
             metadatas = results["metadatas"][query_index]
             distances = results["distances"][query_index]
 
-            for i in range(len(ids)):
+            for i in range(len(ids)): # pylint: disable=consider-using-enumerate
                 memories.append(
                     MemoryResponse(
                         id=ids[i],
@@ -224,7 +224,9 @@ class MemoryService:
         logger.info(f"New facts: {facts}")
         logger.info(f"Existing Memories: {existing_memories}")
 
-        consolidation_result = consolidate_facts(new_facts=facts, existing_memories=existing_memories, llm=self.llm)
+        consolidation_result = consolidate_facts(new_facts=facts,
+                                                 existing_memories=existing_memories,
+                                                 llm=self.llm)
         logger.info(f"Consolidation Plan: {consolidation_result.get('plan')}")
         memories_to_add = []
         memories_to_update = []
