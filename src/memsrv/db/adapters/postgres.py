@@ -50,11 +50,12 @@ class PostgresDBAdapter(VectorDBAdapter):
             return where_sql
         return ""
 
-    def create_collection(self, name, metadata=None):
+    def create_collection(self, name, metadata=None, config=None):
         """
         Creates a new table for memories and an IVFFlat index for fast vector search.
         This method is idempotent and uses a transaction.
         """
+        # TODO: for postgres get the vector size, idx_name and column names from config/metadata
         vector_size = 768
         index_name = f"{name}_embedding_idx"
         index_exists = False
@@ -101,6 +102,7 @@ class PostgresDBAdapter(VectorDBAdapter):
                         """
                     ))
                 logger.info(f"Index '{index_name}' created successfully.")
+                return True
             except exc.DBAPIError as e:
                 # Catch a potential race condition where another process creates the index
                 # after our check but before this command runs.
@@ -109,7 +111,7 @@ class PostgresDBAdapter(VectorDBAdapter):
                 else:
                     raise ValueError(e) from e
 
-    def add(self, collection_name, items):
+    async def add(self, collection_name, items):
 
         self._ensure_collection_exists(collection_name)
         serialized_items = serialize_items(items)
@@ -150,11 +152,10 @@ class PostgresDBAdapter(VectorDBAdapter):
         logger.info(f"Successfully added/updated {len(items)} items in collection '{collection_name}'.")
         return [item.id for item in items]
 
-    def get_by_ids(self, collection_name, ids):
+    async def get_by_ids(self, collection_name, ids):
         pass
-        # return super().get_by_id(collection_name, id)
 
-    def query_by_filter(self, collection_name, filters, limit):
+    async def query_by_filter(self, collection_name, filters, limit):
 
         params = {"limit": limit}
         params.update(filters)
@@ -189,15 +190,15 @@ class PostgresDBAdapter(VectorDBAdapter):
                     "created_at": row['created_at'].isoformat(),
                     "updated_at": row['updated_at'].isoformat()
                 })
-        logger.info(results)
+
         return results
 
-    def query_by_similarity(self,
-                            collection_name,
-                            query_embeddings,
-                            query_texts=None,
-                            filters=None,
-                            top_k=20):
+    async def query_by_similarity(self,
+                                  collection_name,
+                                  query_embeddings,
+                                  query_texts=None,
+                                  filters=None,
+                                  top_k=20):
 
         where_sql = self._format_filters(filters=filters)
 
@@ -245,7 +246,7 @@ class PostgresDBAdapter(VectorDBAdapter):
 
         return results
 
-    def update(self, collection_name, items):
+    async def update(self, collection_name, items):
 
         self._ensure_collection_exists(collection_name)
 
@@ -274,7 +275,7 @@ class PostgresDBAdapter(VectorDBAdapter):
         logger.info(f"Successfully updated {len(items)} items in collection '{collection_name}'.")
         return [item.id for item in items]
 
-    def delete(self, collection_name, fact_ids):
+    async def delete(self, collection_name, fact_ids):
 
         self._ensure_collection_exists(collection_name)
 

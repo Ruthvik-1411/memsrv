@@ -11,40 +11,41 @@ class VectorDBAdapter(ABC):
     @abstractmethod
     def create_collection(self,
                           name: str = "memories",
-                          metadata: Optional[Dict[str, Any]] = None):
+                          metadata: Optional[Dict[str, Any]] = None,
+                          config: Optional[Dict[str, Any]] = None):
         """Create a new collection (or get it if exists)."""
         pass
 
     @abstractmethod
-    def add(self,
+    async def add(self,
             collection_name: str,
             items: List[MemoryInDB]) -> List[str]:
         """Add items (facts + metadata) into a collection."""
         pass
 
     @abstractmethod
-    def update(self,
+    async def update(self,
                collection_name: str,
                items: List[MemoryUpdatePayload]):
         """Updates items at given with new data, fact_id should be provided"""
         pass
 
     @abstractmethod
-    def delete(self,
+    async def delete(self,
                collection_name: str,
                fact_ids: List[str]):
         """Deletes items with provided id"""
         pass
 
     @abstractmethod
-    def get_by_ids(self,
+    async def get_by_ids(self,
                    collection_name: str,
                    ids: List[str]):
         """Get memory items by ids"""
         pass
 
     @abstractmethod
-    def query_by_filter(self,
+    async def query_by_filter(self,
                         collection_name: str,
                         filters: Dict[str, Any],
                         limit: int = 5):
@@ -52,7 +53,7 @@ class VectorDBAdapter(ABC):
         pass
 
     @abstractmethod
-    def query_by_similarity(self,
+    async def query_by_similarity(self,
                             collection_name: str,
                             query_embeddings: List[List[float]],
                             query_texts: List[Optional[str]] = None,

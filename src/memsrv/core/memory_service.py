@@ -54,7 +54,8 @@ class MemoryService:
             return []
 
         if consolidate_facts:
-            response_action = await self.consolidate_and_add_memories(facts=facts, metadata=metadata)
+            response_action = await self.consolidate_and_add_memories(facts=facts,
+                                                                      metadata=metadata)
         else:
             memories_to_create = MemoryCreateRequest(documents=facts, metadata=metadata)
 
@@ -62,13 +63,15 @@ class MemoryService:
 
         return response_action
 
-    async def add_raw_memories(self, data: MemoryCreateRequest, consolidate_facts: bool = True):
+    async def add_raw_memories(self, data: MemoryCreateRequest,
+                               consolidate_facts: bool = True):
         """Add memories directly from raw memory content after consolidation"""
 
         if consolidate_facts:
-            response_action = await self.consolidate_and_add_memories(data.documents, data.metadata)
+            response_action = await self.consolidate_and_add_memories(data.documents,
+                                                                      data.metadata)
             return response_action
-        
+
         response_action = await self.create_memories(data=data)
 
         return response_action
@@ -85,7 +88,8 @@ class MemoryService:
 
         # For first entries, we can directly create them
         if not similar_memories:
-            logger.info("No similar memories found. Skipping consolidation and adding new facts directly.")
+            logger.info("No similar memories found. \
+                        Skipping consolidation and adding new facts directly.")
             create_request = MemoryCreateRequest(documents=facts, metadata=metadata)
             return await self.create_memories(create_request)
 
@@ -153,7 +157,8 @@ class MemoryService:
                     logger.error("Invalid `id` provided by llm, skipping deletion.")
 
         if memories_to_add:
-            create_request = MemoryCreateRequest(documents=memories_to_add, metadata=metadata)
+            create_request = MemoryCreateRequest(documents=memories_to_add,
+                                                 metadata=metadata)
             response_actions.extend(await self.create_memories(create_request))
 
         if memories_to_update:
@@ -181,7 +186,7 @@ class MemoryService:
             for i, fact in enumerate(facts)
         ]
 
-        added_memories_id = self.db.add(collection_name="memories", items=items)
+        added_memories_id = await self.db.add(collection_name="memories", items=items)
 
         response = []
         for i, fact in enumerate(facts):
@@ -210,7 +215,7 @@ class MemoryService:
             for i, update_item in enumerate(update_items)
         ]
 
-        updated_memories_id = self.db.update(collection_name="memories", items=items)
+        updated_memories_id = await self.db.update(collection_name="memories", items=items)
 
         response = []
         for i, item in enumerate(update_items):
@@ -227,7 +232,7 @@ class MemoryService:
     async def delete_memories(self, memory_ids: List[str]):
         """Delete memories from collection"""
 
-        result = self.db.delete(collection_name="memories", fact_ids=memory_ids)
+        result = await self.db.delete(collection_name="memories", fact_ids=memory_ids)
 
         response = []
         for fact_id in result:
@@ -243,7 +248,9 @@ class MemoryService:
     async def search_by_metadata(self, filters: Dict[str, Any] = None, limit: int = 20):
         """Queries vector db with provided filters"""
 
-        results = self.db.query_by_filter(collection_name="memories", filters=filters, limit=limit)
+        results = await self.db.query_by_filter(collection_name="memories",
+                                                filters=filters,
+                                                limit=limit)
         memories = []
         for i in range(len(results.get("ids", []))):
             memories.append(
@@ -269,10 +276,10 @@ class MemoryService:
 
         query_embeddings = await self.embedder.generate_embeddings(texts=query_texts)
 
-        results = self.db.query_by_similarity(collection_name="memories",
-                                              query_embeddings=query_embeddings,
-                                              filters=filters,
-                                              top_k=limit)
+        results = await self.db.query_by_similarity(collection_name="memories",
+                                                    query_embeddings=query_embeddings,
+                                                    filters=filters,
+                                                    top_k=limit)
         memories = []
 
         for query_index in range(len(query_texts)): # pylint: disable=consider-using-enumerate
