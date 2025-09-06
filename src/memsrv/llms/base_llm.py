@@ -17,6 +17,6 @@ class BaseLLM(ABC):
             self.config = BaseLLMConfig()
 
     @abstractmethod
-    def generate_response(self, message: str, system_instruction: str = None, response_format=None):
+    async def generate_response(self, message: str, system_instruction: str = None, response_format=None):
         """Generates a response from the model"""
         pass

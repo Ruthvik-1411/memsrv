@@ -7,6 +7,6 @@ class BaseEmbedding(ABC):
     """Abstract interface for any embedding model provider."""
 
     @abstractmethod
-    def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
+    async def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         """Generates embeddings for a list of texts."""
         pass

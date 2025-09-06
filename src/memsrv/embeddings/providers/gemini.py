@@ -15,11 +15,11 @@ class GeminiEmbedding(BaseEmbedding):
         api_key = api_key or os.getenv("GOOGLE_API_KEY")
         self.client = geminiClient(api_key=api_key)
 
-    def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
+    async def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         """Generates embeddings for a list of texts using Gemini embedding models."""
         try:
             embedding_result = []
-            result = self.client.models.embed_content(
+            result = await self.client.aio.models.embed_content(
                 model=self.embedding_model_name,
                 contents=texts,
                 config=EmbedContentConfig(

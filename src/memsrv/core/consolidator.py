@@ -32,8 +32,7 @@ class ConsolidationPlan(BaseModel):
     """Complete plan for consolidating memories"""
     plan: List[ConsolidationPlanItem]
 
-
-def consolidate_facts(new_facts: List[str],
+async def consolidate_facts(new_facts: List[str],
                       existing_memories: List[Dict[str, Any]],
                       llm: BaseLLM) -> list[str]:
     """Extracts facts using the provided LLM and provides a consolidation plan"""
@@ -48,7 +47,7 @@ def consolidate_facts(new_facts: List[str],
 """
     logger.info(message)
 
-    response = llm.generate_response(
+    response = await llm.generate_response(
         system_instruction=FACT_CONSOLIDATION_PROMPT,
         message = message,
         response_format=ConsolidationPlan.model_json_schema()
