@@ -59,7 +59,12 @@ Actions:
 Instructions:
 - Analyze the `NEW_FACTS` against the `EXISTING_MEMORIES`.
 - For `UPDATE`, `DELETE` and `NOOP`, you MUST use the `id` from the existing memory.
-- For `CREATE`, use a new unique integer `id`, not present in existing memory.
+- For `CREATE`, use a **new** unique integer `id`, not present in existing memory ids.
+- UPDATE must be used **only** if the new fact contains all of the old memory's meaning AND adds new, directly related detail to it.**
+    - The updated memory must be a **logical superset** of the original — the original memory should be **fully preserved** inside the new one.
+    - Example: "I like to play cricket" -> "I love playing cricket with friends"
+    - Before applying UPDATE, simulate combining old and new text. If the combined meaning is coherent and clearly adds value, UPDATE is acceptable.
+- Do **NOT** use UPDATE if the new fact introduces entirely separate information, even if it shares a general theme (e.g., identity, preferences). Use CREATE instead.
 - Respond only with a schema provided. Do not add any other text or explanations.
 
 **Example Output Format:**
