@@ -22,4 +22,4 @@ disable=
 [FORMAT]
 # Max line length
 max-line-length=100
-max-statements=20
+max-statements=100
