@@ -25,7 +25,7 @@ class PostgresDBAdapter(VectorDBAdapter):
         # The engine is created once and manages the connection pool.
         self.engine = create_async_engine(self.connection_string)
 
-    async def setup_database(self, name="memories_new", metadata=None, config=None):
+    async def setup_database(self, name="memories", metadata=None, config=None):
         """Ensures the pgvector extension is enabled in the database and tables are created."""
         try:
             async with self.engine.begin() as conn:
@@ -165,7 +165,38 @@ class PostgresDBAdapter(VectorDBAdapter):
             raise ValueError(e) from e
 
     async def get_by_ids(self, collection_name, ids):
-        pass
+
+        query = text(f"""SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at
+            FROM {collection_name}
+            WHERE id = ANY(:ids);
+        """)
+
+        results = {
+            "ids": [],
+            "documents": [],
+            "metadatas": []
+        }
+
+        try:
+            async with self.engine.connect() as conn:
+                result_proxy = await conn.execute(query, {"ids": ids})
+                for row in result_proxy.mappings():
+                    results["ids"].append(row["id"])
+                    results["documents"].append(row["document"])
+                    results["metadatas"].append({
+                        "user_id": row["user_id"],
+                        "app_id": row["app_id"],
+                        "session_id": row["session_id"],
+                        "agent_name": row["agent_name"],
+                        "event_timestamp": row["event_timestamp"].isoformat(),
+                        "created_at": row["created_at"].isoformat(),
+                        "updated_at": row["updated_at"].isoformat(),
+                    })
+
+            return results
+        except exc.DBAPIError as e:
+            logger.error(f"Failed to get records by IDs: {e}")
+            raise ValueError("Database error occurred") from e
 
     async def query_by_filter(self, collection_name, filters, limit):
 
