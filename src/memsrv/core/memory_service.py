@@ -40,6 +40,20 @@ class MemoryService:
             status=action
         )
 
+    async def get_memories_by_ids(self, memory_ids: List[str]) -> Dict[str, List[Any]]:
+        """
+        Retrieves memories for a given list of IDs.
+        Returns a dict like:
+        {
+            "ids": ["id1", "id3"],
+            "documents": [...],
+            "metadatas": [...]
+        }
+        It only includes data for IDs that were actually found in the db.
+        """
+
+        return await self.db.get_by_ids(collection_name="memories", ids=memory_ids)
+
     async def add_memories_from_conversation(self,
                                     messages: List,
                                     metadata: MemoryMetadata,
@@ -60,19 +74,6 @@ class MemoryService:
             memories_to_create = MemoryCreateRequest(documents=facts, metadata=metadata)
 
             response_action = await self.create_memories(data=memories_to_create)
-
-        return response_action
-
-    async def add_raw_memories(self, data: MemoryCreateRequest,
-                               consolidation: bool = True):
-        """Add memories directly from raw memory content after consolidation"""
-
-        if consolidation:
-            response_action = await self.consolidate_and_add_memories(data.documents,
-                                                                      data.metadata)
-            return response_action
-
-        response_action = await self.create_memories(data=data)
 
         return response_action
 
@@ -200,6 +201,19 @@ class MemoryService:
 
         return response
 
+    async def create_raw_memories(self, data: MemoryCreateRequest,
+                               consolidation: bool = True):
+        """Add memories directly from raw memory content after consolidation"""
+
+        if consolidation:
+            response_action = await self.consolidate_and_add_memories(data.documents,
+                                                                      data.metadata)
+            return response_action
+
+        response_action = await self.create_memories(data=data)
+
+        return response_action
+
     async def update_memories(self, update_items: List[MemoryUpdateRequest]):
         """Updates memory with given id and fact content"""
 
@@ -229,6 +243,35 @@ class MemoryService:
 
         return response
 
+    async def update_raw_memories(self, update_items: List[MemoryUpdateRequest]):
+        """API facing update memories method, validates if ids exists and then updates"""
+        item_ids = [update_item.id for update_item in update_items]
+
+        existing_ids = await self.get_memories_by_ids(memory_ids=item_ids)
+
+        items_to_update = []
+        response_action = []
+        partial_failure = False
+        # TODO: check if set operation speeds up things here
+        for item in update_items:
+            if item.id in existing_ids["ids"]:
+                items_to_update.append(MemoryUpdateRequest(
+                    id=item.id,
+                    document=item.document
+                ))
+            else:
+                partial_failure = True
+                response_action.append(self._format_memory_response(
+                    fact_id=item.id,
+                    action="NOT_FOUND",
+                    fact_content="DATA NOT FOUND"
+                ))
+        
+        if items_to_update:
+            response_action.extend(await self.update_memories(update_items=items_to_update))
+        
+        return response_action, partial_failure
+
     async def delete_memories(self, memory_ids: List[str]):
         """Delete memories from collection"""
 
@@ -244,6 +287,33 @@ class MemoryService:
             )
 
         return response
+
+    async def delete_raw_memories_by_id(self, memory_ids: List[str]):
+        """API facing method for deleting memories by id, validates them before deleting"""
+
+        existing_ids = await self.get_memories_by_ids(memory_ids=memory_ids)
+
+        ids_to_delete = []
+        response_action = []
+        partial_failure = False
+        # TODO: check if set operation speeds up things here
+        for id in memory_ids:
+            if id in existing_ids["ids"]:
+                ids_to_delete.append(id)
+            else:
+                partial_failure = True
+                response_action.append(self._format_memory_response(
+                    fact_id=id,
+                    action="NOT_FOUND",
+                    fact_content="DATA NOT FOUND"
+                ))
+        
+        if ids_to_delete:
+            response_action.extend(await self.delete_memories(memory_ids=ids_to_delete))
+        
+        return response_action, partial_failure
+
+    # TODO: Add delete by user_id and app_ids
 
     async def search_by_metadata(self, filters: Dict[str, Any] = None, limit: int = 20):
         """Queries vector db with provided filters"""
