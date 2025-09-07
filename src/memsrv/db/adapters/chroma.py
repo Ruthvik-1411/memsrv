@@ -14,10 +14,12 @@ class ChromaDBAdapter(VectorDBAdapter):
 
         # TODO: Use chroma client-server for true self-hosted service
         self.client = chromadb.PersistentClient(path=persist_dir)
-        # Create a collection with default setting
+    
+    async def setup_database(self, name="memories", metadata=None, config=None):
+
         # TODO: Chrom returns 1-x value, we need x for similarity
-        self.create_collection(
-            name="memories",
+        await self.create_collection(
+            name=name,
             metadata={
                 "description": "Collection for memory service"
             },
@@ -28,6 +30,7 @@ class ChromaDBAdapter(VectorDBAdapter):
                 }
             }
         )
+        return self
 
     def _format_filters(self, filters: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -47,11 +50,11 @@ class ChromaDBAdapter(VectorDBAdapter):
 
         return filters
 
-    def create_collection(self, name, metadata, config):
+    async def create_collection(self, name, metadata, config):
 
-        # TODO: Change default configuration of L2 to cosine
         logger.info("Ensuring chroma collection exists.")
-        self.client.get_or_create_collection(name=name, metadata=metadata, configuration=config)
+        self.client.create_collection(name=name, metadata=metadata, configuration=config)
+        
         return True
 
     async def add(self, collection_name, items):

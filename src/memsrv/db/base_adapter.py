@@ -8,8 +8,16 @@ class VectorDBAdapter(ABC):
     """Abstract interface for any vector DB provider."""
     # Format filters might not always be required, but we'll see
 
+    @classmethod
+    async def setup_database(self,
+                             name: str = "memories",
+                             metadata: Optional[Dict[str, Any]] = None,
+                             config: Optional[Dict[str, Any]] = None):
+        """Class method to setup database during startup"""
+        pass
+
     @abstractmethod
-    def create_collection(self,
+    async def create_collection(self,
                           name: str = "memories",
                           metadata: Optional[Dict[str, Any]] = None,
                           config: Optional[Dict[str, Any]] = None):

@@ -46,7 +46,7 @@ user: I recently watched The Foundation and Westworld.
 
 Output: {"facts": ["I love sci-fi tv shows", "Watched The Foundation and Westworld recently"]}
 """
-
+# TODO: Add few shot
 FACT_CONSOLIDATION_PROMPT = """You are a Memory Manager.
 Your task is to process new facts against existing memories in the database and decide on one of four actions: ADD, UPDATE, DELETE, or NOOP.
 
