@@ -31,7 +31,7 @@ def get_embedding_instance():
     raise ValueError(f"Unsupported Embedding provider: {EMBEDDING_SERVICE}")
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(fastapi_app: FastAPI):
     """Handles startup and shutdown logic for FastAPI using lifespan"""
     logger.info("Starting Memory Service setup...")
 
@@ -48,9 +48,11 @@ async def lifespan(app: FastAPI):
     else:
         raise ValueError(f"Unsupported DB provider: {DB_SERVICE}")
 
-    memory_service = MemoryService(llm=llm_instance, db_adapter=db_instance, embedder=embedder_instance)
+    memory_service = MemoryService(llm=llm_instance,
+                                   db_adapter=db_instance,
+                                   embedder=embedder_instance)
 
-    app.include_router(memory.create_memory_router(memory_service), prefix="/api/v1")
+    fastapi_app.include_router(memory.create_memory_router(memory_service), prefix="/api/v1")
 
     logger.info("Memory Service setup complete.")
 
@@ -98,4 +100,3 @@ async def add_process_time_header(request: Request, call_next):
     response.headers["X-Process-Time"] = str(process_time)
 
     return response
-

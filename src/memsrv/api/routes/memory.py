@@ -23,7 +23,7 @@ def create_memory_router(memory_service: MemoryService):
             metadata = request.metadata
             # We consolidate and store memories by default, pass False flag to skip consolidation
             response = await memory_service.add_memories_from_conversation(messages, metadata)
-            
+
             return {
                 "message": f"Successfully added {len(response)} memories.",
                 "info": response
@@ -96,7 +96,7 @@ def create_memory_router(memory_service: MemoryService):
         try:
             # We consolidate and store memories by default, pass False flag to skip consolidation
             response = await memory_service.add_raw_memories(data=request)
-            
+
             return {
                 "message": f"Successfully created {len(response)} memories.",
                 "info": response
@@ -112,7 +112,7 @@ def create_memory_router(memory_service: MemoryService):
         try:
             # TODO: Add check by id here before proceeding to update and extend the list
             response = await memory_service.update_memories(update_items=items)
-            
+
             return {
                 "message": f"Successfully updated {len(response)} memories.",
                 "info": response

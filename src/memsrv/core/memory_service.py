@@ -43,7 +43,7 @@ class MemoryService:
     async def add_memories_from_conversation(self,
                                     messages: List,
                                     metadata: MemoryMetadata,
-                                    consolidate_facts: bool = True) -> list[str]:
+                                    consolidation: bool = True) -> list[str]:
         """Extracts facts from conversations and adds them to vector DB"""
         parsed_messages = parse_messages(messages)
         if not parsed_messages.strip():
@@ -53,7 +53,7 @@ class MemoryService:
         if not facts:
             return []
 
-        if consolidate_facts:
+        if consolidation:
             response_action = await self.consolidate_and_add_memories(facts=facts,
                                                                       metadata=metadata)
         else:
@@ -64,10 +64,10 @@ class MemoryService:
         return response_action
 
     async def add_raw_memories(self, data: MemoryCreateRequest,
-                               consolidate_facts: bool = True):
+                               consolidation: bool = True):
         """Add memories directly from raw memory content after consolidation"""
 
-        if consolidate_facts:
+        if consolidation:
             response_action = await self.consolidate_and_add_memories(data.documents,
                                                                       data.metadata)
             return response_action

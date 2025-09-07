@@ -159,7 +159,7 @@ class PostgresDBAdapter(VectorDBAdapter):
             return [item.id for item in items]
         except exc.DBAPIError as e:
             if "datetime" in str(e).lower():
-                logger.warning(f"Invalid datetime format supplied for one or more fields, please provide in isoformat.")
+                logger.warning("Invalid datetime format supplied for one or more fields, please provide in isoformat.")
             else:
                 logger.error(f"An unexpected database error occurred: {e}")
             raise ValueError(e) from e

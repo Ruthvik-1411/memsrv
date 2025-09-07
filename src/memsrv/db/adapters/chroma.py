@@ -14,7 +14,7 @@ class ChromaDBAdapter(VectorDBAdapter):
 
         # TODO: Use chroma client-server for true self-hosted service
         self.client = chromadb.PersistentClient(path=persist_dir)
-    
+
     async def setup_database(self, name="memories", metadata=None, config=None):
 
         # TODO: Chrom returns 1-x value, we need x for similarity
@@ -54,7 +54,7 @@ class ChromaDBAdapter(VectorDBAdapter):
 
         logger.info("Ensuring chroma collection exists.")
         self.client.create_collection(name=name, metadata=metadata, configuration=config)
-        
+
         return True
 
     async def add(self, collection_name, items):
