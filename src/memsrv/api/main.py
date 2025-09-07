@@ -1,6 +1,7 @@
 """Fast api entry point will be defined here"""
 # pylint: disable=import-outside-toplevel
 import time
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,38 +24,49 @@ def get_llm_instance():
         return GeminiModel(config)
     raise ValueError(f"Unsupported LLM provider: {LLM_SERVICE}")
 
-def get_db_instance():
-    """Get the DB instance based on config"""
-    if DB_SERVICE == "chroma":
-        from memsrv.db.adapters.chroma import ChromaDBAdapter
-        return ChromaDBAdapter(persist_dir="./chroma_db")
-    if DB_SERVICE == "postgres":
-        from memsrv.db.adapters.postgres import PostgresDBAdapter
-        return PostgresDBAdapter(connection_string=CONNECTION_STRING)
-    raise ValueError(f"Unsupported DB provider: {DB_SERVICE}")
-
 def get_embedding_instance():
     """Get the embedding instance based on config"""
     if EMBEDDING_SERVICE == "gemini":
         return GeminiEmbedding(model_name="gemini-embedding-001")
     raise ValueError(f"Unsupported Embedding provider: {EMBEDDING_SERVICE}")
 
-llm_instance = get_llm_instance()
-db_instance = get_db_instance()
-embedding_instance = get_embedding_instance()
+@asynccontextmanager
+async def lifespan(fastapi_app: FastAPI):
+    """Handles startup and shutdown logic for FastAPI using lifespan"""
+    logger.info("Starting Memory Service setup...")
 
-memory_service_instance = MemoryService(
-    llm=llm_instance,
-    db_adapter=db_instance,
-    embedder=embedding_instance
-)
+    llm_instance = get_llm_instance()
+    embedder_instance = get_embedding_instance()
+
+    if DB_SERVICE == "chroma":
+        # Lazy loading
+        from memsrv.db.adapters.chroma import ChromaDBAdapter
+        db_instance = await ChromaDBAdapter(persist_dir="./chroma_db").setup_database()
+    elif DB_SERVICE == "postgres":
+        from memsrv.db.adapters.postgres import PostgresDBAdapter
+        db_instance = await PostgresDBAdapter(connection_string=CONNECTION_STRING).setup_database()
+    else:
+        raise ValueError(f"Unsupported DB provider: {DB_SERVICE}")
+
+    memory_service = MemoryService(llm=llm_instance,
+                                   db_adapter=db_instance,
+                                   embedder=embedder_instance)
+
+    fastapi_app.include_router(memory.create_memory_router(memory_service), prefix="/api/v1")
+
+    logger.info("Memory Service setup complete.")
+
+    yield  # The will app will run from here
+
+    logger.info("Shutting down Memory Service...")
 
 app = FastAPI(
     title="Memory Service API",
     version="1.0.0",
     description="A self-hosted memory service for LLMs and AI agents",
     docs_url="/api/v1/docs",
-    openapi_url="/api/v1/openapi.json"
+    openapi_url="/api/v1/openapi.json",
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -88,5 +100,3 @@ async def add_process_time_header(request: Request, call_next):
     response.headers["X-Process-Time"] = str(process_time)
 
     return response
-
-app.include_router(memory.create_memory_router(memory_service_instance), prefix="/api/v1")

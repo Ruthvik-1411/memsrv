@@ -29,9 +29,9 @@ def parse_messages(messages: list) -> str:
                     parsed_result.append(f"Assistant: {text}")
     return "\n".join(parsed_result)
 
-def extract_facts(parsed_messages: str, llm: BaseLLM) -> list[str]:
+async def extract_facts(parsed_messages: str, llm: BaseLLM) -> list[str]:
     """Extracts facts using the provided LLM"""
-    response = llm.generate_response(
+    response = await llm.generate_response(
         system_instruction=FACT_EXTRACTION_PROMPT,
         message="Now, extract the facts from the following conversation:\n" + parsed_messages,
         response_format=Facts.model_json_schema()

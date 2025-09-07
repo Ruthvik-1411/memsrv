@@ -17,7 +17,7 @@ class GeminiModel(BaseLLM):
         api_key = self.config.api_key or os.getenv("GOOGLE_API_KEY")
         self.client = geminiClient(api_key=api_key)
 
-    def generate_response(self,
+    async def generate_response(self,
                           message: str,
                           system_instruction: str = None,
                           response_format=None):
@@ -44,7 +44,7 @@ class GeminiModel(BaseLLM):
             generation_config["response_mime_type"] = "application/json"
             generation_config["response_schema"] = response_format
 
-        response = self.client.models.generate_content(
+        response = await self.client.aio.models.generate_content(
             model=self.config.model_name,
             config=types.GenerateContentConfig(**generation_config),
             contents=contents

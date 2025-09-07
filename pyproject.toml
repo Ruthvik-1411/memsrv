@@ -5,6 +5,7 @@ description = "A simple, self-hosted memory service boilerplate for LLMs and age
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "asyncpg>=0.30.0",
     "chromadb>=1.0.17",
     "google-adk>=1.11.0",
     "pg8000>=1.31.4",
