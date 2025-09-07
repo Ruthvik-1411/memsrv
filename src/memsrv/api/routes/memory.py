@@ -138,7 +138,7 @@ def create_memory_router(memory_service: MemoryService):
 
             message = f"Successfully updated {len(response)} memories."
             if error_status:
-                message = f"Partially updated memories. One or more updates failed."
+                message = "Partially updated memories. One or more updates failed."
             return {
                 "message": message,
                 "info": response
@@ -156,7 +156,7 @@ def create_memory_router(memory_service: MemoryService):
 
             message = f"Successfully deleted {len(response)} memories."
             if error_status:
-                message = f"Partially deleted memories. One or more deletes failed."
+                message = "Partially deleted memories. One or more deletes failed."
             return {
                 "message": message,
                 "info": response

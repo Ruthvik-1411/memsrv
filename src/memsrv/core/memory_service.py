@@ -297,13 +297,13 @@ class MemoryService:
         response_action = []
         partial_failure = False
         # TODO: check if set operation speeds up things here
-        for id in memory_ids:
-            if id in existing_ids["ids"]:
-                ids_to_delete.append(id)
+        for mem_id in memory_ids:
+            if mem_id in existing_ids["ids"]:
+                ids_to_delete.append(mem_id)
             else:
                 partial_failure = True
                 response_action.append(self._format_memory_response(
-                    fact_id=id,
+                    fact_id=mem_id,
                     action="NOT_FOUND",
                     fact_content="DATA NOT FOUND"
                 ))
