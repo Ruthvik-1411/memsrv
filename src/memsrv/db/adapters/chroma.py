@@ -53,7 +53,7 @@ class ChromaDBAdapter(VectorDBAdapter):
     async def create_collection(self, name, metadata, config):
 
         logger.info("Ensuring chroma collection exists.")
-        self.client.create_collection(name=name, metadata=metadata, configuration=config)
+        self.client.get_or_create_collection(name=name, metadata=metadata, configuration=config)
 
         return True
 

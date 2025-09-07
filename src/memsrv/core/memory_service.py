@@ -266,10 +266,10 @@ class MemoryService:
                     action="NOT_FOUND",
                     fact_content="DATA NOT FOUND"
                 ))
-        
+
         if items_to_update:
             response_action.extend(await self.update_memories(update_items=items_to_update))
-        
+
         return response_action, partial_failure
 
     async def delete_memories(self, memory_ids: List[str]):
@@ -307,10 +307,10 @@ class MemoryService:
                     action="NOT_FOUND",
                     fact_content="DATA NOT FOUND"
                 ))
-        
+
         if ids_to_delete:
             response_action.extend(await self.delete_memories(memory_ids=ids_to_delete))
-        
+
         return response_action, partial_failure
 
     # TODO: Add delete by user_id and app_ids
