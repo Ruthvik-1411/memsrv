@@ -21,12 +21,12 @@
 *Objective: Implement a strategy for handling memory updates and make the service more interactive.*
 
 -   [x] **Expose CRUD as Tools:** Enhance the API to expose full Create, Read, Update, and Delete (CRUD) operations, making them usable as "tools" by an AI agent.
--   [ ] **Develop Memory Update Strategy:** Design and implement a baseline mechanism for updating memories. This will handle cases where new information contradicts or refines existing facts (e.g., implementing an "rewriting using LLM" or "append and retrieve latest" logic).
+-   [x] **Develop Memory Update Strategy:** Design and implement a baseline mechanism for updating memories. This will handle cases where new information contradicts or refines existing facts (e.g., implementing an "rewriting using LLM" or "append and retrieve latest" logic).
 
 #### **Milestone 4: Refactoring for Extensibility**
 *Objective: Optimize the existing code and refactor it into a modular, pluggable architecture to support multiple backends.*
 
--   [ ] **Optimize Core Services:** Review and optimize the performance of the fact generation and memory update pipelines.
+-   [x] **Optimize Core Services:** Review and optimize the performance of the fact generation and memory update pipelines.
 -   [x] **Create a Database Adapter Interface:** Refactor the database-specific code (ChromaDB) to sit behind a generic `VectorDBAdapter` interface. This will make the core service agnostic to the underlying vector database.
 -   [x] **Abstract LLM/Embedding Logic:** Refactor the `google-genai` specific code to sit behind a generic `LLMProvider` interface, preparing for future support of other models and libraries like LangChain.
 
