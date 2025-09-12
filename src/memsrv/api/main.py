@@ -9,44 +9,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from memsrv.api.routes import memory
 from memsrv.utils.logger import get_logger
 from memsrv.core.memory_service import MemoryService
-from memsrv.llms.providers.gemini import GeminiModel
-from memsrv.embeddings.providers.gemini import GeminiEmbedding
-from memsrv.llms.base_config import BaseLLMConfig
-from config import LLM_SERVICE, DB_SERVICE, EMBEDDING_SERVICE, CONNECTION_STRING
+from memsrv.utils.factory import LLMFactory, EmbeddingFactory, DBFactory
 
 load_dotenv()
 logger = get_logger(__name__)
-
-def get_llm_instance():
-    """Get the llm instance based on config"""
-    if LLM_SERVICE == "gemini":
-        config = BaseLLMConfig(model_name="gemini-2.0-flash")
-        return GeminiModel(config)
-    raise ValueError(f"Unsupported LLM provider: {LLM_SERVICE}")
-
-def get_embedding_instance():
-    """Get the embedding instance based on config"""
-    if EMBEDDING_SERVICE == "gemini":
-        return GeminiEmbedding(model_name="gemini-embedding-001")
-    raise ValueError(f"Unsupported Embedding provider: {EMBEDDING_SERVICE}")
 
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
     """Handles startup and shutdown logic for FastAPI using lifespan"""
     logger.info("Starting Memory Service setup...")
 
-    llm_instance = get_llm_instance()
-    embedder_instance = get_embedding_instance()
-
-    if DB_SERVICE == "chroma":
-        # Lazy loading
-        from memsrv.db.adapters.chroma import ChromaDBAdapter
-        db_instance = await ChromaDBAdapter(persist_dir="./chroma_db").setup_database()
-    elif DB_SERVICE == "postgres":
-        from memsrv.db.adapters.postgres import PostgresDBAdapter
-        db_instance = await PostgresDBAdapter(connection_string=CONNECTION_STRING).setup_database()
-    else:
-        raise ValueError(f"Unsupported DB provider: {DB_SERVICE}")
+    llm_instance = LLMFactory.create()
+    embedder_instance = EmbeddingFactory.create()
+    db_instance = await DBFactory.create()
 
     memory_service = MemoryService(llm=llm_instance,
                                    db_adapter=db_instance,

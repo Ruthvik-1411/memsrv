@@ -10,16 +10,16 @@ logger = get_logger(__name__)
 
 class ChromaDBAdapter(VectorDBAdapter):
     """Implements vector db ops for chroma DB"""
-    def __init__(self, persist_dir: str = "./chroma_db"):
-
+    def __init__(self, collection_name: str, persist_dir: str, **kwargs):
+        super().__init__(collection_name=collection_name, persist_dir=persist_dir)
         # TODO: Use chroma client-server for true self-hosted service
         self.client = chromadb.PersistentClient(path=persist_dir)
 
-    async def setup_database(self, name="memories", metadata=None, config=None):
+    async def setup_database(self, metadata=None, config=None):
 
         # TODO: Chrom returns 1-x value, we need x for similarity
         await self.create_collection(
-            name=name,
+            collection_name=self.collection_name,
             metadata={
                 "description": "Collection for memory service"
             },
@@ -50,16 +50,18 @@ class ChromaDBAdapter(VectorDBAdapter):
 
         return filters
 
-    async def create_collection(self, name, metadata, config):
+    async def create_collection(self, collection_name, metadata, config):
 
         logger.info("Ensuring chroma collection exists.")
-        self.client.get_or_create_collection(name=name, metadata=metadata, configuration=config)
+        self.client.get_or_create_collection(name=collection_name,
+                                             metadata=metadata,
+                                             configuration=config)
 
         return True
 
-    async def add(self, collection_name, items):
+    async def add(self, items):
 
-        collection = self.client.get_collection(name=collection_name)
+        collection = self.client.get_collection(name=self.collection_name)
         serialized_items = serialize_items(items)
 
         collection.add(
@@ -72,17 +74,17 @@ class ChromaDBAdapter(VectorDBAdapter):
         logger.info(f"Successfully added {len(items)} items to chroma collection.")
         return serialized_items["ids"]
 
-    async def get_by_ids(self, collection_name, ids):
+    async def get_by_ids(self, ids):
 
-        collection = self.client.get_collection(name=collection_name)
+        collection = self.client.get_collection(name=self.collection_name)
 
         result = collection.get(ids=ids)
 
         return result
 
-    async def query_by_filter(self, collection_name, filters, limit):
+    async def query_by_filter(self, filters, limit):
 
-        collection = self.client.get_collection(name=collection_name)
+        collection = self.client.get_collection(name=self.collection_name)
         where_clause = self._format_filters(filters)
 
         results = collection.get(
@@ -93,13 +95,12 @@ class ChromaDBAdapter(VectorDBAdapter):
         return results
 
     async def query_by_similarity(self,
-                            collection_name,
-                            query_embeddings,
-                            query_texts=None,
-                            filters=None,
-                            top_k=20):
+                                  query_embeddings,
+                                  query_texts=None,
+                                  filters=None,
+                                  top_k=20):
 
-        collection = self.client.get_collection(name=collection_name)
+        collection = self.client.get_collection(name=self.collection_name)
         where_clause = self._format_filters(filters)
 
         results = collection.query(
@@ -110,9 +111,9 @@ class ChromaDBAdapter(VectorDBAdapter):
 
         return results
 
-    async def update(self, collection_name, items):
+    async def update(self, items):
 
-        collection = self.client.get_collection(name=collection_name)
+        collection = self.client.get_collection(name=self.collection_name)
         ids_to_update = [item.id for item in items]
         documents = [item.document for item in items]
         embeddings = [item.embedding for item in items]
@@ -128,9 +129,9 @@ class ChromaDBAdapter(VectorDBAdapter):
         logger.info(f"Successfully updated {len(items)} items to chroma collection.")
         return ids_to_update
 
-    async def delete(self, collection_name, fact_ids):
+    async def delete(self, fact_ids):
 
-        collection = self.client.get_collection(name=collection_name)
+        collection = self.client.get_collection(name=self.collection_name)
         collection.delete(ids=fact_ids)
 
         logger.info(f"Successfully deleted memory with id {fact_ids} from chroma collection")

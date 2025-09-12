@@ -52,7 +52,7 @@ class MemoryService:
         It only includes data for IDs that were actually found in the db.
         """
 
-        return await self.db.get_by_ids(collection_name="memories", ids=memory_ids)
+        return await self.db.get_by_ids(ids=memory_ids)
 
     async def add_memories_from_conversation(self,
                                     messages: List,
@@ -187,7 +187,7 @@ class MemoryService:
             for i, fact in enumerate(facts)
         ]
 
-        added_memories_id = await self.db.add(collection_name="memories", items=items)
+        added_memories_id = await self.db.add(items=items)
 
         response = []
         for i, fact in enumerate(facts):
@@ -229,7 +229,7 @@ class MemoryService:
             for i, update_item in enumerate(update_items)
         ]
 
-        updated_memories_id = await self.db.update(collection_name="memories", items=items)
+        updated_memories_id = await self.db.update(items=items)
 
         response = []
         for i, item in enumerate(update_items):
@@ -275,7 +275,7 @@ class MemoryService:
     async def delete_memories(self, memory_ids: List[str]):
         """Delete memories from collection"""
 
-        result = await self.db.delete(collection_name="memories", fact_ids=memory_ids)
+        result = await self.db.delete(fact_ids=memory_ids)
 
         response = []
         for fact_id in result:
@@ -318,8 +318,7 @@ class MemoryService:
     async def search_by_metadata(self, filters: Dict[str, Any] = None, limit: int = 20):
         """Queries vector db with provided filters"""
 
-        results = await self.db.query_by_filter(collection_name="memories",
-                                                filters=filters,
+        results = await self.db.query_by_filter(filters=filters,
                                                 limit=limit)
         memories = []
         for i in range(len(results.get("ids", []))):
@@ -346,8 +345,7 @@ class MemoryService:
 
         query_embeddings = await self.embedder.generate_embeddings(texts=query_texts)
 
-        results = await self.db.query_by_similarity(collection_name="memories",
-                                                    query_embeddings=query_embeddings,
+        results = await self.db.query_by_similarity(query_embeddings=query_embeddings,
                                                     filters=filters,
                                                     top_k=limit)
         memories = []

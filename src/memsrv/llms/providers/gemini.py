@@ -1,5 +1,4 @@
 """generic classes to use gemini api providers"""
-import os
 from typing import Optional
 from google.genai import types
 from google.genai.client import Client as geminiClient
@@ -14,7 +13,7 @@ class GeminiModel(BaseLLM):
         if not self.config.model_name:
             self.config.model_name = "gemini-2.0-flash"
 
-        api_key = self.config.api_key or os.getenv("GOOGLE_API_KEY")
+        api_key = self.config.api_key
         self.client = geminiClient(api_key=api_key)
 
     async def generate_response(self,
