@@ -1,6 +1,6 @@
 """config file which selects llms, vector DBs"""
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class MemoryConfig(BaseSettings):
     """Simple config class for all services used"""
@@ -35,8 +35,7 @@ class MemoryConfig(BaseSettings):
         """Reads the api key based on provider"""
         if self.LLM_PROVIDER == "gemini":
             return self.GOOGLE_API_KEY
-        else:
-            return None
+        return None
 
     @property
     def connection_string(self) -> Optional[str]:
