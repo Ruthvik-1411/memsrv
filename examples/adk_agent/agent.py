@@ -1,4 +1,5 @@
 """Core module for agent orchestration"""
+# pylint: disable=protected-access
 from typing import List
 from google.adk.agents import Agent
 from google.adk.tools import ToolContext

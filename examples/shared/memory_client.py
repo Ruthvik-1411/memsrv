@@ -1,4 +1,5 @@
 """Common http client side implementation for memory service"""
+# pylint: disable=too-many-positional-arguments
 import os
 from typing import Dict, Any, List, Optional
 import requests
@@ -33,7 +34,7 @@ class MemoryClient:
         # TODO: Need to add better reading of errors
         response.raise_for_status()
         return response.json()
-    
+
     def create_memory(self,
                       memory_content: List[str],
                       metadata: Dict[str, Any]) -> Dict[str, Any]:
@@ -72,7 +73,7 @@ class MemoryClient:
         # TODO: Need to add better reading of errors
         response.raise_for_status()
         return response.json()
-    
+
     def get_similar_memories(self,
                              query: str,
                              user_id: str,
