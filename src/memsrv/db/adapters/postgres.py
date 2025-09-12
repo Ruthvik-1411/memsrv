@@ -1,6 +1,5 @@
 """Postgres with pgvector implementation"""
 # pylint: disable=too-many-positional-arguments, too-many-locals, signature-differs, line-too-long
-import os
 from typing import Dict, Any, Optional
 from datetime import datetime
 
@@ -15,17 +14,20 @@ logger = get_logger(__name__)
 # TODO: Refactor for SQL Injection vulnerability
 class PostgresDBAdapter(VectorDBAdapter):
     """Implements the DB adapter for postgres database using sql alchemy"""
-    def __init__(self, connection_string: Optional[str] = None):
+    def __init__(self, collection_name: str, connection_string: str, **kwargs):
         """Initializes the adapter using SQLalchemy connection string"""
-        self.connection_string = connection_string or os.getenv("DATABASE_URL")
+        self.collection_name = collection_name
+        self.connection_string = connection_string
+        
         if not self.connection_string:
             raise ValueError("Connection string missing, either set it as env var or pass it.")
+        
         logger.info(f"Using connection {self.connection_string}")
 
         # The engine is created once and manages the connection pool.
         self.engine = create_async_engine(self.connection_string)
 
-    async def setup_database(self, name="memories", metadata=None, config=None):
+    async def setup_database(self, metadata=None, config=None):
         """Ensures the pgvector extension is enabled in the database and tables are created."""
         try:
             async with self.engine.begin() as conn:
@@ -35,7 +37,7 @@ class PostgresDBAdapter(VectorDBAdapter):
 
             logger.info("Creating table with the index")
 
-            await self.create_collection(name)
+            await self.create_collection(collection_name=self.collection_name)
             return self
         except exc.SQLAlchemyError as e:
             logger.error(f"Failed to connect to PostgreSQL or enable extension: {e}")
@@ -50,22 +52,22 @@ class PostgresDBAdapter(VectorDBAdapter):
             return where_sql
         return ""
 
-    async def create_collection(self, name, metadata=None, config=None):
+    async def create_collection(self, collection_name, metadata=None, config=None):
         """
         Creates a new table for memories and an IVFFlat index for fast vector search.
         This method is idempotent and uses a transaction.
         """
         # TODO: for postgres get the vector size, idx_name and column names from config/metadata
         vector_size = 768
-        index_name = f"{name}_embedding_idx"
+        index_name = f"{collection_name}_embedding_idx"
         index_exists = False
 
         async with self.engine.begin() as conn:
-            logger.info(f"Initializing collection '{name}'...")
+            logger.info(f"Initializing collection '{collection_name}'...")
             # TODO: Table columns should be inferred from metadata datamodel
             await conn.execute(text(
                 f"""
-                CREATE TABLE IF NOT EXISTS {name} (
+                CREATE TABLE IF NOT EXISTS {collection_name} (
                     id TEXT PRIMARY KEY,
                     document TEXT,
                     embedding VECTOR({vector_size}),
@@ -98,10 +100,10 @@ class PostgresDBAdapter(VectorDBAdapter):
 
                 try:
 
-                    logger.info(f"Creating index '{index_name}' on {name}.embedding... This may take a moment.")
+                    logger.info(f"Creating index '{index_name}' on {collection_name}.embedding... This may take a moment.")
                     await conn.execute(text(
                         f"""
-                        CREATE INDEX CONCURRENTLY {index_name} ON {name}
+                        CREATE INDEX CONCURRENTLY {index_name} ON {collection_name}
                         USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
                         """
                     ))
@@ -117,7 +119,7 @@ class PostgresDBAdapter(VectorDBAdapter):
                 else:
                     raise ValueError(e) from e
 
-    async def add(self, collection_name, items):
+    async def add(self, items):
 
         serialized_items = serialize_items(items)
 
@@ -140,7 +142,7 @@ class PostgresDBAdapter(VectorDBAdapter):
         # Adds a list of memory items using a single transactional bulk insert.
         # Use named parameters for clarity and safety
         insert_stmt = text(f"""
-            INSERT INTO {collection_name} (
+            INSERT INTO {self.collection_name} (
                 id, document, embedding, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at
             ) VALUES (
                 :id, :document, :embedding, :user_id, :app_id, :session_id, :agent_name, :event_timestamp, :created_at, :updated_at
@@ -155,7 +157,7 @@ class PostgresDBAdapter(VectorDBAdapter):
             async with self.engine.begin() as conn:
                 await conn.execute(insert_stmt, data_to_insert)
 
-            logger.info(f"Successfully added/updated {len(items)} items in collection '{collection_name}'.")
+            logger.info(f"Successfully added/updated {len(items)} items in collection '{self.collection_name}'.")
             return [item.id for item in items]
         except exc.DBAPIError as e:
             if "datetime" in str(e).lower():
@@ -164,10 +166,10 @@ class PostgresDBAdapter(VectorDBAdapter):
                 logger.error(f"An unexpected database error occurred: {e}")
             raise ValueError(e) from e
 
-    async def get_by_ids(self, collection_name, ids):
+    async def get_by_ids(self, ids):
 
         query = text(f"""SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at
-            FROM {collection_name}
+            FROM {self.collection_name}
             WHERE id = ANY(:ids);
         """)
 
@@ -198,14 +200,14 @@ class PostgresDBAdapter(VectorDBAdapter):
             logger.error(f"Failed to get records by IDs: {e}")
             raise ValueError("Database error occurred") from e
 
-    async def query_by_filter(self, collection_name, filters, limit):
+    async def query_by_filter(self, filters, limit):
 
         params = {"limit": limit}
         params.update(filters)
 
         where_sql = self._format_filters(filters=filters)
 
-        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at FROM {collection_name}"
+        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at FROM {self.collection_name}"
         if where_sql:
             query_str += where_sql
 
@@ -241,7 +243,6 @@ class PostgresDBAdapter(VectorDBAdapter):
             raise ValueError(e) from e
 
     async def query_by_similarity(self,
-                                  collection_name,
                                   query_embeddings,
                                   query_texts=None,
                                   filters=None,
@@ -250,7 +251,7 @@ class PostgresDBAdapter(VectorDBAdapter):
         where_sql = self._format_filters(filters=filters)
 
         # Similarity search, converting cosine distance to a similarity score.
-        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at, 1 - (embedding <=> :embedding) AS similarity FROM {collection_name}"
+        query_str = f"SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at, 1 - (embedding <=> :embedding) AS similarity FROM {self.collection_name}"
         if where_sql:
             query_str += where_sql
         query_str += " ORDER BY similarity DESC LIMIT :top_k;"
@@ -297,7 +298,7 @@ class PostgresDBAdapter(VectorDBAdapter):
             logger.error(f"An unexpected database error occurred: {e}")
             raise ValueError(e) from e
 
-    async def update(self, collection_name, items):
+    async def update(self, items):
 
         data_to_update = [
             {
@@ -310,7 +311,7 @@ class PostgresDBAdapter(VectorDBAdapter):
         ]
 
         update_stmt = text(f"""
-            UPDATE {collection_name}
+            UPDATE {self.collection_name}
             SET
                 document = :document,
                 embedding = :embedding,
@@ -322,16 +323,16 @@ class PostgresDBAdapter(VectorDBAdapter):
             async with self.engine.begin() as conn:
                 await conn.execute(update_stmt, data_to_update)
 
-            logger.info(f"Successfully updated {len(items)} items in collection '{collection_name}'.")
+            logger.info(f"Successfully updated {len(items)} items in collection '{self.collection_name}'.")
             return [item.id for item in items]
         except exc.DBAPIError as e:
             logger.error(f"An unexpected database error occurred: {e}")
             raise ValueError(e) from e
 
-    async def delete(self, collection_name, fact_ids):
+    async def delete(self, fact_ids):
 
         delete_stmt = text(f"""
-            DELETE FROM {collection_name}
+            DELETE FROM {self.collection_name}
             WHERE id = ANY(:ids);
         """)
 
@@ -339,7 +340,7 @@ class PostgresDBAdapter(VectorDBAdapter):
             async with self.engine.begin() as conn:
                 await conn.execute(delete_stmt, {"ids": fact_ids})
 
-            logger.info(f"Successfully deleted {len(fact_ids)} items from collection '{collection_name}'.")
+            logger.info(f"Successfully deleted {len(fact_ids)} items from collection '{self.collection_name}'.")
             return fact_ids
         except exc.DBAPIError as e:
             logger.error(f"An unexpected database error occurred: {e}")
