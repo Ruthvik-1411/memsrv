@@ -31,15 +31,15 @@ class MemoryConfig(BaseSettings):
     DATABASE_PORT: Optional[str] = "5432"
 
     @property
-    def LLM_API_KEY(self) -> str:
+    def llm_api_key(self) -> str:
         """Reads the api key based on provider"""
         if self.LLM_PROVIDER == "gemini":
             return self.GOOGLE_API_KEY
         else:
             return None
-    
+
     @property
-    def CONNECTION_STRING(self) -> Optional[str]:
+    def connection_string(self) -> Optional[str]:
         """Constructs the connection string for postgres"""
         if self.DB_PROVIDER == "postgres":
             return (
@@ -49,10 +49,10 @@ class MemoryConfig(BaseSettings):
         return None
 
     @property
-    def DB_CONFIG(self) -> dict:
+    def db_config(self) -> dict:
         """Prepares the config for db"""      
         return {
-            "connection_string": self.CONNECTION_STRING,
+            "connection_string": self.connection_string,
             "persist_dir": self.DB_PERSIST_DIR,
             "collection_name": self.DB_COLLECTION_NAME
         }

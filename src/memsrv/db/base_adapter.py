@@ -7,7 +7,10 @@ from memsrv.models.memory import MemoryInDB, MemoryUpdatePayload
 class VectorDBAdapter(ABC):
     """Abstract interface for any vector DB provider."""
 
-    def __init__(self, collection_name: str, connection_string: Optional[str] = None, persist_dir: Optional[str] = None):
+    def __init__(self,
+                 collection_name: str,
+                 connection_string: Optional[str] = None,
+                 persist_dir: Optional[str] = None):
         self.connection_string = connection_string
         self.persist_dir = persist_dir
         self.collection_name = collection_name

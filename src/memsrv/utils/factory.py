@@ -36,7 +36,7 @@ class LLMFactory:
 
         llm_class = load_class(cls.provider_mapping[provider])
         config = BaseLLMConfig(model_name=model_name,
-                               api_key=memory_config.LLM_API_KEY)
+                               api_key=memory_config.llm_api_key)
 
         return llm_class(config)
 
@@ -58,7 +58,7 @@ class EmbeddingFactory:
 
         embedder_class = load_class(cls.provider_mapping[provider])
         # FIXME: Using llm key for now but should seperate later
-        return embedder_class(model_name=model_name, api_key=memory_config.LLM_API_KEY)
+        return embedder_class(model_name=model_name, api_key=memory_config.llm_api_key)
 
 class DBFactory:
     """Factory for creating database adapter instances"""
@@ -77,8 +77,8 @@ class DBFactory:
             raise ValueError(f"Unsupported DB provider: {provider}.")
 
         db_class = load_class(cls.provider_mapping[provider])
-        db_instance = db_class(**memory_config.DB_CONFIG)
-        
+        db_instance = db_class(**memory_config.db_config)
+
         return await db_instance.setup_database()
 
 class MemoryServiceFactory:

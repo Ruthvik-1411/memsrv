@@ -16,12 +16,10 @@ class PostgresDBAdapter(VectorDBAdapter):
     """Implements the DB adapter for postgres database using sql alchemy"""
     def __init__(self, collection_name: str, connection_string: str, **kwargs):
         """Initializes the adapter using SQLalchemy connection string"""
-        self.collection_name = collection_name
-        self.connection_string = connection_string
-        
+        super().__init__(collection_name=collection_name, connection_string=connection_string)
         if not self.connection_string:
             raise ValueError("Connection string missing, either set it as env var or pass it.")
-        
+
         logger.info(f"Using connection {self.connection_string}")
 
         # The engine is created once and manages the connection pool.

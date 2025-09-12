@@ -11,9 +11,8 @@ logger = get_logger(__name__)
 class ChromaDBAdapter(VectorDBAdapter):
     """Implements vector db ops for chroma DB"""
     def __init__(self, collection_name: str, persist_dir: str, **kwargs):
-
+        super().__init__(collection_name=collection_name, persist_dir=persist_dir)
         # TODO: Use chroma client-server for true self-hosted service
-        self.collection_name = collection_name
         self.client = chromadb.PersistentClient(path=persist_dir)
 
     async def setup_database(self, metadata=None, config=None):
@@ -54,7 +53,9 @@ class ChromaDBAdapter(VectorDBAdapter):
     async def create_collection(self, collection_name, metadata, config):
 
         logger.info("Ensuring chroma collection exists.")
-        self.client.get_or_create_collection(name=collection_name, metadata=metadata, configuration=config)
+        self.client.get_or_create_collection(name=collection_name,
+                                             metadata=metadata,
+                                             configuration=config)
 
         return True
 
