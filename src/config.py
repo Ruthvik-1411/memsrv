@@ -1,24 +1,60 @@
 """config file which selects llms, vector DBs"""
-import os
-from dotenv import load_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
 
-load_dotenv()
+class MemoryConfig(BaseSettings):
+    """Simple config class for all services used"""
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-# TODO: Instead of llm, embedding service, use model name for choosing the service
-# if "gemini" in gemini-2.0-flash, gemini-embedding-001
-LLM_SERVICE = "gemini"
-DB_SERVICE = "chroma"
-# DB_SERVICE = "postgres"
-EMBEDDING_SERVICE = "gemini"
+    # LLM setup
+    LLM_PROVIDER: str = "google"
+    LLM_MODEL: str = "gemini-2.0-flash"
 
-if DB_SERVICE == "postgres":
-    db_user = os.getenv("DATABASE_USER")
-    db_pswd = os.getenv("DATABASE_PASSWORD")
-    db_name = os.getenv("DATABASE_NAME")
-    db_host = os.getenv("DATABASE_HOST", "127.0.0.1")
-    db_port = os.getenv("DATABASE_PORT", "5432")
-    # Synchronous db ops
-    # CONNECTION_STRING = f"postgresql+pg8000://{db_user}:{db_pswd}@{db_host}:{db_port}/{db_name}"
-    CONNECTION_STRING = f"postgresql+asyncpg://{db_user}:{db_pswd}@{db_host}:{db_port}/{db_name}"
-else:
-    CONNECTION_STRING = ""
+    GOOGLE_API_KEY: Optional[str]
+
+    # Embedding setup
+    EMBEDDING_PROVIDER: str = "google"
+    EMBEDDING_MODEL: str = "gemini-embedding-001"
+
+    # DB setup
+    DB_PROVIDER: str = "chroma"
+    DB_COLLECTION_NAME: str = "memories"
+
+    # Chroma
+    DB_PERSIST_DIR: Optional[str] = ""
+
+    # Postgres
+    DATABASE_USER: Optional[str]
+    DATABASE_PASSWORD: Optional[str]
+    DATABASE_NAME: Optional[str]
+    DATABASE_HOST: Optional[str] = "127.0.0.1"
+    DATABASE_PORT: Optional[str] = "5432"
+
+    @property
+    def LLM_API_KEY(self) -> str:
+        """Reads the api key based on provider"""
+        if self.LLM_PROVIDER == "gemini":
+            return self.GOOGLE_API_KEY
+        else:
+            return None
+    
+    @property
+    def CONNECTION_STRING(self) -> Optional[str]:
+        """Constructs the connection string for postgres"""
+        if self.DB_PROVIDER == "postgres":
+            return (
+                f"postgresql+asyncpg://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}"
+                f"@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
+            )
+        return None
+
+    @property
+    def DB_CONFIG(self) -> dict:
+        """Prepares the config for db"""      
+        return {
+            "connection_string": self.CONNECTION_STRING,
+            "persist_dir": self.DB_PERSIST_DIR,
+            "collection_name": self.DB_COLLECTION_NAME
+        }
+
+memory_config = MemoryConfig()
