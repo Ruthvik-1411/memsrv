@@ -1,6 +1,9 @@
-# memsrv
+# Milestones and Next steps
 
 ### **Project Milestones**
+
+<details>
+    <summary>Planned Milestones</summary>
 
 #### **Milestone 1: Foundational Fact Pipeline** ✅
 *Objective: Establish the core, non-vector pipeline for extracting facts from conversations and storing them with associated metadata.*
@@ -41,3 +44,22 @@
 
 -   [ ] **Research & Design for Multimodality:** Investigate the requirements for handling multimodal memories (e.g., storing image data alongside text).
 -   [ ] **Prototype Multimodal Similarity:** Explore and test multimodal embedding models to understand how similarity matching would work across different data types.
+</details>
+
+### Key dates
+<details>
+    <summary>Click here to see key dates</summary>
+
+- Aug 10, 2025 - Repo created
+- Aug 14, 2025 - Milestones definition
+- Aug 23, 2025 - Baseline memory service creation with fastapi and chromaDB
+- Aug 31, 2025 - Added postgres and defined datamodels and **memory consolidation**
+- Sep 06, 2025 - Refactored all methods to async
+- Sep 12, 2025 - Added linting, modified examples and optimize service initialization
+</details>
+
+### Future Plans
+
+Since the service initializations and creation has been centralized into one file <a href="src/memsrv/utils/factory.py">`src/memsrv/utils/factory.py`</a> the service can be exposed as an MCP server or it can be cloned and the methods can be directly used as needed in any codebase.
+
+These modifications will done once all active and important issues have been closed/implemented. The aim is to fully optimize and document the existing service and then move to build different usage methods.
