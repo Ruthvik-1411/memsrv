@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from memsrv.utils.logger import get_logger
 from memsrv.db.base_adapter import VectorDBAdapter
 from memsrv.db.utils import serialize_items
+from memsrv.models.response import QueryResponse
 
 logger = get_logger(__name__)
 
@@ -49,6 +50,23 @@ class PostgresDBAdapter(VectorDBAdapter):
 
             return where_sql
         return ""
+
+    def _parse_row(self, row) -> dict:
+        """Helper to parse a single SQLAlchemy row into a dict with ISO-formatted datetimes."""
+        return {
+            "id": row['id'],
+            "document": row['document'],
+            "metadata": {
+                "user_id": row['user_id'],
+                "app_id": row['app_id'],
+                "session_id": row['session_id'],
+                "agent_name": row['agent_name'],
+                "event_timestamp": row['event_timestamp'].isoformat(),
+                "created_at": row['created_at'].isoformat(),
+                "updated_at": row['updated_at'].isoformat(),
+            },
+            "distance": row.get("similarity", None)
+        }
 
     async def create_collection(self, collection_name, metadata=None, config=None):
         """
@@ -171,29 +189,22 @@ class PostgresDBAdapter(VectorDBAdapter):
             WHERE id = ANY(:ids);
         """)
 
-        results = {
-            "ids": [],
-            "documents": [],
-            "metadatas": []
-        }
+        result_ids, documents, metadatas = [], [], []
 
         try:
             async with self.engine.connect() as conn:
                 result_proxy = await conn.execute(query, {"ids": ids})
                 for row in result_proxy.mappings():
-                    results["ids"].append(row["id"])
-                    results["documents"].append(row["document"])
-                    results["metadatas"].append({
-                        "user_id": row["user_id"],
-                        "app_id": row["app_id"],
-                        "session_id": row["session_id"],
-                        "agent_name": row["agent_name"],
-                        "event_timestamp": row["event_timestamp"].isoformat(),
-                        "created_at": row["created_at"].isoformat(),
-                        "updated_at": row["updated_at"].isoformat(),
-                    })
+                    parsed_row = self._parse_row(row)
+                    result_ids.append(parsed_row["id"])
+                    documents.append(parsed_row["document"])
+                    metadatas.append(parsed_row["metadata"])
 
-            return results
+            return QueryResponse(
+                ids=[result_ids],
+                documents=[documents],
+                metadatas=[metadatas]
+            )
         except exc.DBAPIError as e:
             logger.error(f"Failed to get records by IDs: {e}")
             raise ValueError("Database error occurred") from e
@@ -213,29 +224,22 @@ class PostgresDBAdapter(VectorDBAdapter):
 
         query = text(query_str)
 
-        results = {
-            "ids": [],
-            "documents": [],
-            "metadatas": []
-        }
+        ids, documents, metadatas = [], [], []
         try:
             async with self.engine.connect() as conn:
                 result_proxy = await conn.execute(query, params)
                 # .mappings() allows dict-like access
                 for row in result_proxy.mappings():
-                    results["ids"].append(row['id'])
-                    results["documents"].append(row['document'])
-                    results["metadatas"].append({
-                        "user_id": row['user_id'],
-                        "app_id": row['app_id'],
-                        "session_id": row['session_id'],
-                        "agent_name": row['agent_name'],
-                        "event_timestamp": row["event_timestamp"].isoformat(),
-                        "created_at": row['created_at'].isoformat(),
-                        "updated_at": row['updated_at'].isoformat()
-                    })
+                    parsed_row = self._parse_row(row)
+                    ids.append(parsed_row["id"])
+                    documents.append(parsed_row["document"])
+                    metadatas.append(parsed_row["metadata"])
 
-            return results
+            return QueryResponse(
+                ids=[ids],
+                documents=[documents],
+                metadatas=[metadatas]
+            )
         except exc.DBAPIError as e:
             logger.error(f"An unexpected database error occurred: {e}")
             raise ValueError(e) from e
@@ -256,8 +260,10 @@ class PostgresDBAdapter(VectorDBAdapter):
 
         query = text(query_str)
 
-        results = {"ids": [], "documents": [], "metadatas": [], "distances": []}
+        ids, documents, metadatas, distances = [], [], [], []
         try:
+            # FIXME: Use a CTE and ROW_NUMBER() to perform all queries in a single round-trip
+            # This would be much more efficient than looping and sending one query per embedding.
             async with self.engine.connect() as conn:
                 for embedding in query_embeddings:
 
@@ -267,31 +273,29 @@ class PostgresDBAdapter(VectorDBAdapter):
 
                     result_proxy = await conn.execute(query, params)
                     # We return same format for API compatibility
-                    ids = []
-                    documents = []
-                    metadatas = []
-                    distances = []
+                    result_ids = []
+                    result_documents = []
+                    result_metadatas = []
+                    result_distances = []
 
                     for row in result_proxy.mappings():
-                        ids.append(row['id'])
-                        documents.append(row['document'])
-                        metadatas.append({
-                            "user_id": row['user_id'],
-                            "app_id": row['app_id'],
-                            "session_id": row['session_id'],
-                            "agent_name": row['agent_name'],
-                            "event_timestamp": row["event_timestamp"].isoformat(),
-                            "created_at": row['created_at'].isoformat(),
-                            "updated_at": row['updated_at'].isoformat()
-                        })
-                        distances.append(row['similarity'])
+                        parsed_row = self._parse_row(row)
+                        result_ids.append(parsed_row["id"])
+                        result_documents.append(parsed_row["document"])
+                        result_metadatas.append(parsed_row["metadata"])
+                        result_distances.append(parsed_row["distance"])
 
-                    results["ids"].append(ids)
-                    results["documents"].append(documents)
-                    results["metadatas"].append(metadatas)
-                    results["distances"].append(distances)
+                    ids.append(result_ids)
+                    documents.append(result_documents)
+                    metadatas.append(result_metadatas)
+                    distances.append(result_distances)
 
-            return results
+            return QueryResponse(
+                ids=ids,
+                documents=documents,
+                metadatas=metadatas,
+                distances=distances
+            )
         except exc.DBAPIError as e:
             logger.error(f"An unexpected database error occurred: {e}")
             raise ValueError(e) from e

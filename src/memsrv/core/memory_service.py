@@ -254,7 +254,7 @@ class MemoryService:
         partial_failure = False
         # TODO: check if set operation speeds up things here
         for item in update_items:
-            if item.id in existing_ids["ids"]:
+            if item.id in existing_ids.ids[0]:
                 items_to_update.append(MemoryUpdateRequest(
                     id=item.id,
                     document=item.document
@@ -298,7 +298,7 @@ class MemoryService:
         partial_failure = False
         # TODO: check if set operation speeds up things here
         for mem_id in memory_ids:
-            if mem_id in existing_ids["ids"]:
+            if mem_id in existing_ids.ids[0]:
                 ids_to_delete.append(mem_id)
             else:
                 partial_failure = True
@@ -320,15 +320,16 @@ class MemoryService:
 
         results = await self.db.query_by_filter(filters=filters,
                                                 limit=limit)
+        
         memories = []
-        for i in range(len(results.get("ids", []))):
+        for i in range(len(results.ids[0])):
             memories.append(
                 MemoryResponse(
-                    id=results["ids"][i],
-                    document=results["documents"][i],
-                    metadata=results["metadatas"][i],
-                    created_at=results["metadatas"][i].get("created_at"),
-                    updated_at=results["metadatas"][i].get("updated_at")
+                    id=results.ids[0][i],
+                    document=results.documents[0][i],
+                    metadata=results.metadatas[0][i],
+                    created_at=results.metadatas[0][i].get("created_at"),
+                    updated_at=results.metadatas[0][i].get("updated_at")
                 )
             )
 
@@ -339,7 +340,8 @@ class MemoryService:
                                       filters: Dict[str, Any] = None,
                                       limit: int = 20):
         """Queries vector db and get memories similar to query and applies filters"""
-
+        # Note: Since this accepts bulk operation, it should result in
+        # [results1, results2...] but we just add everything to a single list for now
         if isinstance(query_texts, str):
             query_texts = [query_texts]
 
@@ -351,10 +353,10 @@ class MemoryService:
         memories = []
 
         for query_index in range(len(query_texts)): # pylint: disable=consider-using-enumerate
-            ids = results["ids"][query_index]
-            documents = results["documents"][query_index]
-            metadatas = results["metadatas"][query_index]
-            distances = results["distances"][query_index]
+            ids = results.ids[query_index]
+            documents = results.documents[query_index]
+            metadatas = results.metadatas[query_index]
+            distances = results.distances[query_index]
 
             for i in range(len(ids)): # pylint: disable=consider-using-enumerate
                 memories.append(

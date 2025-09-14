@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 from memsrv.models.memory import MemoryInDB, MemoryUpdatePayload
+from memsrv.models.response import QueryResponse
 
 class VectorDBAdapter(ABC):
     """Abstract interface for any vector DB provider."""
@@ -26,7 +27,7 @@ class VectorDBAdapter(ABC):
     async def create_collection(self,
                                 collection_name: str,
                                 metadata: Optional[Dict[str, Any]] = None,
-                                config: Optional[Dict[str, Any]] = None):
+                                config: Optional[Dict[str, Any]] = None) -> bool:
         """Create a new collection (or get it if exists)."""
         pass
 
@@ -38,7 +39,7 @@ class VectorDBAdapter(ABC):
 
     @abstractmethod
     async def update(self,
-                     items: List[MemoryUpdatePayload]):
+                     items: List[MemoryUpdatePayload]) -> List[str]:
         """Updates items at given with new data, fact_id should be provided"""
         pass
 
@@ -50,14 +51,14 @@ class VectorDBAdapter(ABC):
 
     @abstractmethod
     async def get_by_ids(self,
-                         ids: List[str]):
+                         ids: List[str]) -> QueryResponse:
         """Get memory items by ids"""
         pass
 
     @abstractmethod
     async def query_by_filter(self,
                               filters: Dict[str, Any],
-                              limit: int = 5):
+                              limit: int = 5) -> QueryResponse:
         """Query items by filters"""
         pass
 
@@ -66,6 +67,6 @@ class VectorDBAdapter(ABC):
                                   query_embeddings: List[List[float]],
                                   query_texts: List[Optional[str]] = None,
                                   filters: Optional[Dict[str, Any]] = None,
-                                  top_k: int = 20):
+                                  top_k: int = 20) -> QueryResponse:
         """Query items by text with optional filters."""
         pass

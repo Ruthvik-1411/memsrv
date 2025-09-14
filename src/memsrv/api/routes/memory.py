@@ -114,14 +114,14 @@ def create_memory_router(memory_service: MemoryService):
         try:
             results = await memory_service.get_memories_by_ids(memory_ids=ids)
             memories = []
-            for i in range(len(results.get("ids", []))):
+            for i in range(len(results.ids[0])):
                 memories.append(
                     MemoryResponse(
-                        id=results["ids"][i],
-                        document=results["documents"][i],
-                        metadata=results["metadatas"][i],
-                        created_at=results["metadatas"][i].get("created_at"),
-                        updated_at=results["metadatas"][i].get("updated_at")
+                        id=results.ids[0][i],
+                        document=results.documents[0][i],
+                        metadata=results.metadatas[0][i],
+                        created_at=results.metadatas[0][i].get("created_at"),
+                        updated_at=results.metadatas[0][i].get("updated_at")
                     )
                 )
             return GetMemoriesResponse(memories=memories)
