@@ -1,8 +1,15 @@
 """API response data models"""
-from typing import Optional, List, Literal
+from typing import Optional, Any, List, Dict, Literal
 from pydantic import BaseModel
 
 from memsrv.models.memory import MemoryMetadata
+
+class QueryResponse(BaseModel):
+    """Standard response model for database query operations."""
+    ids: List[List[str]]
+    documents: List[List[Optional[str]]]
+    metadatas: List[List[Dict[str, Any]]]
+    distances: Optional[List[List[float]]] = None
 
 class MemoryResponse(BaseModel):
     """Model for a single memory returned to the client."""

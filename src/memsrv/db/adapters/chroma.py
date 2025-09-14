@@ -5,6 +5,7 @@ import chromadb
 from memsrv.utils.logger import get_logger
 from memsrv.db.base_adapter import VectorDBAdapter
 from memsrv.db.utils import serialize_items
+from memsrv.models.response import QueryResponse
 
 logger = get_logger(__name__)
 
@@ -78,9 +79,13 @@ class ChromaDBAdapter(VectorDBAdapter):
 
         collection = self.client.get_collection(name=self.collection_name)
 
-        result = collection.get(ids=ids)
+        results = collection.get(ids=ids)
 
-        return result
+        return QueryResponse(
+            ids=[results.get("ids", [])],
+            documents=[results.get("documents", [])],
+            metadatas=[results.get("metadatas", [])]
+        )
 
     async def query_by_filter(self, filters, limit):
 
@@ -92,7 +97,11 @@ class ChromaDBAdapter(VectorDBAdapter):
             limit=limit
         )
 
-        return results
+        return QueryResponse(
+            ids=[results.get("ids", [])],
+            documents=[results.get("documents", [])],
+            metadatas=[results.get("metadatas", [])]
+        )
 
     async def query_by_similarity(self,
                                   query_embeddings,
@@ -109,7 +118,12 @@ class ChromaDBAdapter(VectorDBAdapter):
             where=where_clause if where_clause else None
         )
 
-        return results
+        return QueryResponse(
+            ids=results.get("ids", []),
+            documents=results.get("documents", []),
+            metadatas=results.get("metadatas", []),
+            distances=results.get("distances", [])
+        )
 
     async def update(self, items):
 
