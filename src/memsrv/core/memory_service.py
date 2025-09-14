@@ -320,7 +320,7 @@ class MemoryService:
 
         results = await self.db.query_by_filter(filters=filters,
                                                 limit=limit)
-        
+
         memories = []
         for i in range(len(results.ids[0])):
             memories.append(
