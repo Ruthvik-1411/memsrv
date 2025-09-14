@@ -18,7 +18,7 @@ class GeminiEmbedding(BaseEmbedding):
         try:
             embedding_result = []
             result = await self.client.aio.models.embed_content(
-                model=self.embedding_model_name,
+                model=self.model_name,
                 contents=texts,
                 config=EmbedContentConfig(
                     task_type="RETRIEVAL_DOCUMENT",
