@@ -49,6 +49,6 @@ root_agent = Agent(
     tools=[get_current_time,
            calculate_expression,
            CustomMemoryTool(name="memory_tool", description="preload_memory"),
-           save_memories
+        #    save_memories
     ]
 )
