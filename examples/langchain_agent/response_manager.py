@@ -3,8 +3,10 @@ import uuid
 import logging
 
 from langchain_core.runnables import RunnableConfig
+from langchain_core.messages import message_to_dict
 
-from agent import root_agent
+from langchain_agent.agent import root_agent
+from langchain_agent.utils import format_messages_to_events
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -19,14 +21,16 @@ class ResponseManager:
         self.agent = root_agent
         self.user_id = user_id
         self.in_memory_sessions = []
-    
+
     async def invoke_agent(self, session_id: str, query: str):
         """Invokes the root agent while maintaining sessionid
         for continuance"""
         try:
             logger.info(f"Fetching session data with id: {session_id}")
             if session_id not in self.in_memory_sessions:
+                # Ideally we use a db session manager, but this is a simple workaround
                 logger.info(f"Session doesn't exist, creating and using new session with id: {session_id}")
+                self.in_memory_sessions.append(session_id)
 
             session: RunnableConfig  = {
                 "configurable": {
@@ -41,39 +45,53 @@ class ResponseManager:
                 }
             ]
 
-            final_response_text = ""
-            for event in self.agent.stream({
-                "user_id": self.user_id,
-                "app_name": self.agent.name,
-                "messages": messages
-            },
-            config=session,
-            stream_mode="values"):
+            final_message = ""
+            for event in self.agent.stream(
+                {
+                    "user_id": self.user_id,
+                    "app_name": self.agent.name,
+                    "messages": messages
+                },
+                config=session,
+                stream_mode="values"
+            ):
                 latest_message = event["messages"][-1]
-                logger.info(f"[Message Type] {latest_message.type}")
                 if latest_message.content:
-                    logger.info(f"Agent: {latest_message.content}")
-                    yield {
-                        "is_final_response": False,
-                        "status": "finished",
-                        "result": latest_message.content,
-                        "event": event
-                    }
-                    final_response_text = latest_message.content
+                    if latest_message.type == "human":
+                        yield {
+                            "is_final_response": False,
+                            "status": "sending",
+                            "result": latest_message.content,
+                            "event": message_to_dict(latest_message)
+                        }
+                    elif latest_message.type == "ai":
+                        final_message = latest_message
+                        yield {
+                            "is_final_response": False,
+                            "status": "finished",
+                            "result": latest_message.content,
+                            "event": message_to_dict(latest_message)
+                        }
+                    elif latest_message.type == "tool":
+                        yield {
+                            "is_final_response": False,
+                            "status": "tool_response",
+                            "event": message_to_dict(latest_message)
+                        }
                 elif latest_message.tool_calls:
-                    logger.info(f"Calling tools: {[tc['name'] for tc in latest_message.tool_calls]}")
                     yield {
                         "is_final_response": False,
                         "status": "tool_call",
-                        "event": event
+                        "event": message_to_dict(latest_message)
                     }
-            
-            if final_response_text:
+
+            if final_message:
+                logger.info("Response generation complete.")
                 yield {
                     "is_final_response": True,
                     "status": "finished",
-                    "result": final_response_text,
-                    "event": event
+                    "result": final_message.content,
+                    "event": message_to_dict(final_message)
                 }
         except Exception as e:
             logger.error(f"Error generating response. {str(e)}")
@@ -83,10 +101,17 @@ class ResponseManager:
                 "result": "No final response received",
                 "error_message": str(e)
             }
-    
-    async def dump_session_events(self, session_id):
+
+    async def dump_session_events(self, session_id: str):
         """Dump session events"""
-        pass
+        graph_state = self.agent.get_state({
+            "configurable": {
+                "thread_id": session_id
+            }
+        })
+        session_events = format_messages_to_events(graph_state.values.get("messages", []))
+
+        return session_events
 
 async def test_agent():
     """Utils function to test the agent using response manager"""
@@ -100,6 +125,5 @@ async def test_agent():
     async for response in first_response:
         logger.info(f"Events: {response}")
 
-import asyncio
-
-asyncio.run(test_agent())
+# import asyncio
+# asyncio.run(test_agent())
