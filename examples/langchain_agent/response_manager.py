@@ -29,7 +29,7 @@ class ResponseManager:
             logger.info(f"Fetching session data with id: {session_id}")
             if session_id not in self.in_memory_sessions:
                 # Ideally we use a db session manager, but this is a simple workaround
-                logger.info(f"Session doesn't exist, creating and using new session with id: {session_id}")
+                logger.info(f"Session doesn't exist, using new session with id: {session_id}")
                 self.in_memory_sessions.append(session_id)
 
             session: RunnableConfig  = {
