@@ -60,6 +60,6 @@
 
 ### Future Plans
 
-Since the service initializations and creation has been centralized into one file <a href="src/memsrv/utils/factory.py">`src/memsrv/utils/factory.py`</a> the service can be exposed as an MCP server or it can be cloned and the methods can be directly used as needed in any codebase.
+Since the service initializations and creation has been centralized into one file [src/memsrv/utils/factory.py](src/memsrv/utils/factory.py) the service can be exposed as an MCP server or it can be cloned and the methods can be directly used as needed in any codebase.
 
 These modifications will done once all active and important issues have been closed/implemented. The aim is to fully optimize and document the existing service and then move to build different usage methods.
