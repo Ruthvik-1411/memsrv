@@ -47,10 +47,15 @@ class ResponseManager:
 
             final_message = ""
             for event in self.agent.stream(
-                {
+                input={
                     "user_id": self.user_id,
                     "app_name": self.agent.name,
                     "messages": messages
+                },
+                # For middleware, we pass in context
+                context={
+                    "user_id": self.user_id,
+                    "app_name": self.agent.name,
                 },
                 config=session,
                 stream_mode="values"

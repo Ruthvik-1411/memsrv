@@ -1,10 +1,13 @@
 """Common utils for langchain agents"""
+import ast
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 
 def format_messages_to_events(messages: list):
     """Formats langchain messages into format acceptable
     by memory backend or openai standard"""
     events = []
+    role = "user"
+    parts = []
     for message in messages:
         if isinstance(message, HumanMessage):
             role = "user"
@@ -27,11 +30,12 @@ def format_messages_to_events(messages: list):
                 "function_response": {
                     "id": message.id,
                     "name": message.name,
-                    "response": eval(message.content)
+                    "response": ast.literal_eval(message.content)
                 }
             }]
         else:
             print("Unidentified message type, skipping formatting.")
+            continue
 
         events.append({
             "parts": parts,
