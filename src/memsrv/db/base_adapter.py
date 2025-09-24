@@ -10,16 +10,28 @@ class VectorDBAdapter(ABC):
 
     def __init__(self,
                  collection_name: str,
+                 description: str,
+                 embedding_dim: str,
                  connection_string: Optional[str] = None,
-                 persist_dir: Optional[str] = None):
+                 persist_dir: Optional[str] = None,
+                 provider_config: Optional[Dict[str, Any]] = None,
+                 host: Optional[str] = None,
+                 port: Optional[int] = None,
+                 user: Optional[str] = None,
+                 password: Optional[str] = None):
+        self.collection_name = collection_name
+        self.embedding_dim = embedding_dim
+        self.description = description
         self.connection_string = connection_string
         self.persist_dir = persist_dir
-        self.collection_name = collection_name
+        self.provider_config = provider_config or {}
+        self.host = host
+        self.port = port
+        self.user = user
+        self.password = password
 
     @abstractmethod
-    async def setup_database(self,
-                             metadata: Optional[Dict[str, Any]] = None,
-                             config: Optional[Dict[str, Any]] = None):
+    async def setup_database(self):
         """Class method to setup database during startup"""
         pass
 
