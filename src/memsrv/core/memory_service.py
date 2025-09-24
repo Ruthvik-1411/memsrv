@@ -166,7 +166,7 @@ class MemoryService:
             response_actions.extend(await self.update_memories(memories_to_update))
 
         if memories_to_delete:
-            response_actions.extend(self.delete_memories(memories_to_delete))
+            response_actions.extend(await self.delete_memories(memories_to_delete))
 
         logger.info(response_actions)
 

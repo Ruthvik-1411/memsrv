@@ -15,6 +15,7 @@ class MemoryConfig(BaseSettings):
     # Embedding setup
     EMBEDDING_PROVIDER: str = "google"
     EMBEDDING_MODEL: str = "gemini-embedding-001"
+    EMBEDDING_DIM: int = 768
 
     # DB setup
     DB_PROVIDER: str = "chroma"
