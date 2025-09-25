@@ -1,4 +1,4 @@
-"""Chroma db implementation"""
+"""Chroma db implementation using local/persistent db setup"""
 # pylint: disable=too-many-positional-arguments, signature-differs
 from typing import Dict, Any
 import chromadb
@@ -10,7 +10,7 @@ from memsrv.models.response import QueryResponse
 logger = get_logger(__name__)
 
 class ChromaLiteDBAdapter(VectorDBAdapter):
-    """Implements vector db ops for chroma DB"""
+    """Implements vector db ops for chroma DB using persistent dir"""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.client = chromadb.PersistentClient(path=self.persist_dir)

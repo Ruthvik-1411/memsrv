@@ -70,8 +70,9 @@ class DBFactory:
     """Factory for creating database adapter instances"""
 
     provider_mapping = {
+        "chroma_lite": "memsrv.db.adapters.chroma_lite.ChromaLiteDBAdapter",
         "chroma": "memsrv.db.adapters.chroma.ChromaDBAdapter",
-        "postgres": "memsrv.db.adapters.postgres.PostgresDBAdapter",
+        "postgres": "memsrv.db.adapters.postgres.PostgresDBAdapter"
     }
 
     @classmethod

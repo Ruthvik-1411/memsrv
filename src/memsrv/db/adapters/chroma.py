@@ -1,4 +1,4 @@
-"""Chroma db implementation"""
+"""Chroma db implementation using client-server chroma setup"""
 # pylint: disable=too-many-positional-arguments, signature-differs
 from typing import Dict, Any
 import chromadb
@@ -10,7 +10,7 @@ from memsrv.models.response import QueryResponse
 logger = get_logger(__name__)
 
 class ChromaDBAdapter(VectorDBAdapter):
-    """Implements vector db ops for chroma DB"""
+    """Implements vector db ops for chroma DB via http client-server"""
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._client_kwargs = {"host": self.host, "port": self.port}

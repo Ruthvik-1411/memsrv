@@ -1,6 +1,8 @@
 """config file which selects llms, vector DBs"""
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+ALLOWED_DB_PROVIDERS = Literal["chroma_lite", "chroma", "postgres"]
 
 class MemoryConfig(BaseSettings):
     """Simple config class for all services used"""
@@ -18,12 +20,12 @@ class MemoryConfig(BaseSettings):
     EMBEDDING_DIM: int = 768
 
     # DB setup
-    DB_PROVIDER: str = "chroma"
+    DB_PROVIDER: ALLOWED_DB_PROVIDERS = "chroma_lite"
     DB_COLLECTION_NAME: str = "memories"
     DB_DESCRIPTION: Optional[str] = "Default memory collection"
 
     # Chroma lite(local)
-    DB_PERSIST_DIR: Optional[str] = ""
+    DB_PERSIST_DIR: Optional[str] = "./chroma_db"
 
     # Postgres (for relational dbs)
     DATABASE_USER: Optional[str]
@@ -38,7 +40,7 @@ class MemoryConfig(BaseSettings):
     DB_USER: Optional[str] = None
     DB_PASSWORD: Optional[str] = None
 
-    # Provider-specific configs (e.g. HNSW config, IVF params, connection pool size)
+    # Provider specific configs (e.g. HNSW config, IVF params, connection pool size)
     # should be added in valid dict format, they are directly unpacked
     DB_PROVIDER_CONFIG: Dict[str, Any] = {}
 

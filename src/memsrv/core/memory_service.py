@@ -1,4 +1,4 @@
-"""To add MemoryService class to add facts and to db services"""
+"""Core MemoryService class to manage memories"""
 # pylint: disable=too-many-locals, too-many-branches
 from typing import List, Dict, Optional, Any, Union
 
@@ -340,7 +340,7 @@ class MemoryService:
                                       filters: Dict[str, Any] = None,
                                       limit: int = 20):
         """Queries vector db and get memories similar to query and applies filters"""
-        # Note: Since this accepts bulk operation, it should result in
+        # FIXME: Since this accepts bulk operation, it should result in
         # [results1, results2...] but we just add everything to a single list for now
         if isinstance(query_texts, str):
             query_texts = [query_texts]
