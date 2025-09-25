@@ -2,7 +2,7 @@
 from typing import Optional, Dict, Any, Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ALLOWED_DB_PROVIDERS = Literal["chroma_lite", "chroma", "postgres"]
+AllowedVectorDbProviders = Literal["chroma_lite", "chroma", "postgres"]
 
 class MemoryConfig(BaseSettings):
     """Simple config class for all services used"""
@@ -20,7 +20,7 @@ class MemoryConfig(BaseSettings):
     EMBEDDING_DIM: int = 768
 
     # DB setup
-    DB_PROVIDER: ALLOWED_DB_PROVIDERS = "chroma_lite"
+    DB_PROVIDER: AllowedVectorDbProviders = "chroma_lite"
     DB_COLLECTION_NAME: str = "memories"
     DB_DESCRIPTION: Optional[str] = "Default memory collection"
 

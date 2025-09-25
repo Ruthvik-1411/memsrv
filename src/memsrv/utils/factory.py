@@ -57,7 +57,7 @@ class EmbeddingFactory:
 
         if provider not in cls.provider_mapping:
             raise ValueError(f"Unsupported Embedding provider: {provider}.")
-        
+
         # FIXME: Using llm key for now but should seperate later
         embedder_class = load_class(cls.provider_mapping[provider])
         config = BaseEmbeddingConfig(model_name=model_name,
