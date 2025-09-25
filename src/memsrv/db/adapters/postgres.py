@@ -15,18 +15,18 @@ logger = get_logger(__name__)
 # TODO: Refactor for SQL Injection vulnerability
 class PostgresDBAdapter(VectorDBAdapter):
     """Implements the DB adapter for postgres database using sql alchemy"""
-    def __init__(self, collection_name: str, connection_string: str, **kwargs):
+    def __init__(self, **kwargs):
         """Initializes the adapter using SQLalchemy connection string"""
-        super().__init__(collection_name=collection_name, connection_string=connection_string)
+        super().__init__(**kwargs)
         if not self.connection_string:
             raise ValueError("Connection string missing, either set it as env var or pass it.")
 
-        logger.info(f"Using connection {self.connection_string}")
+        logger.info(f"Using connection {self.connection_string} for postgres.")
 
         # The engine is created once and manages the connection pool.
         self.engine = create_async_engine(self.connection_string)
 
-    async def setup_database(self, metadata=None, config=None):
+    async def setup_database(self):
         """Ensures the pgvector extension is enabled in the database and tables are created."""
         try:
             async with self.engine.begin() as conn:
@@ -68,13 +68,14 @@ class PostgresDBAdapter(VectorDBAdapter):
             "distance": row.get("similarity", None)
         }
 
+    # TODO: Use metadata and config when setting postgres index/db
     async def create_collection(self, collection_name, metadata=None, config=None):
         """
         Creates a new table for memories and an IVFFlat index for fast vector search.
         This method is idempotent and uses a transaction.
         """
         # TODO: for postgres get the vector size, idx_name and column names from config/metadata
-        vector_size = 768
+        vector_size = self.embedding_dim
         index_name = f"{collection_name}_embedding_idx"
         index_exists = False
 

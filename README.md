@@ -1,20 +1,20 @@
-# memsrv
+# Memsrv
 
-A simple, self-hosted memory service boilerplate for LLMs and agent frameworks.
+**Memsrv** is a lightweight, self-hosted memory service for LLMs and agent frameworks. It helps your Agentic or LLM applications **remember facts across sessions**, retrieve information with **semantic search**, and plug into your existing agents with minimal setup. Think of it as a **memory layer** that makes your models more context-aware, consistent and personalized over time.
 
 ## Overview
 
-`memsrv` provides a streamlined solution for managing long term memory for your LLM and agentic applications. It allows you to extract, store, and retrieve factual information from conversations, leveraging vector embeddings for semantic search. The service is designed to be modular and extensible, supporting multiple vector database backends and LLM, Embedding providers.
+`Memsrv` is built to give LLMs and agent frameworks a reliable way to manage long-term memory. Instead of relying on session context alone, it provides a structured service for:
+* **Fact Extraction** - distilling key information from conversations into structured "memories".
+* **Vector based Storage** - encoding facts as embeddings for semantic search.
+* **Metadata Filtering** - retrieving memories tied to a specific user, session, or application.
 
-Key features:
+The service is:
+* **Modular** - supports multiple vector database backends (e.g., ChromaDB, Postgres with pgvector).
+* **Extensible** - works with different LLM and embedding providers.
+* **Integrable** - exposes a REST API so memories can be queried or updated from any application, or wrapped directly as tools within your agents.
 
-*   **Fact Extraction:** Automatically extracts key facts from conversation histories.
-*   **Semantic Search:** Uses vector embeddings to enable semantic retrieval of memories based on similarity to a query.
-*   **Metadata Filtering:** Supports filtering memories based on metadata such as user ID, session ID, and application ID.
-*   **Multiple Database Support:** Pluggable architecture supports different vector databases, such as ChromaDB and Postgres with pgvector.
-*   **REST API:** Exposes core memory services through a REST API for easy integration with other applications.
-    - The services can be wrapped around functions and can be used as tools with your agent(`memory_as_a_tool`).
-*   **CRUD Operations:** Supports Create, Read, Update, and Delete operations over the vector database for memory management.
+This design is inspired by [VertexAI Memory Bank](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/memory-bank/overview), but implemented in a lightweight, self-hosted way for developers who want full control over their agent’s memory layer.
 
 > Note: This project is still in active development. For status, milestones and next steps of this project refer [Project Milestones](./Milestones.md).
 
@@ -170,12 +170,12 @@ custom_memory_middleware = DynamicSystemPromptMiddleware(preload_memory_prompt_f
 root_agent = create_agent(
     ...
     middleware=[custom_memory_middleware],
-    context_schema=AgentContext,
+    context_schema=CustomAgentState,
     ...
 )
 ```
-You can playaround with both methods and see what works best.
->**A Note on Stability**: LangChain and LangGraph are under rapid development. The Agent Middleware API is a newer feature and may change in future versions, which could break the implementation of Method 2. Method 1 (Callable Prompt) relies on a more core, stable feature.
+You can play around with both methods and see what works best.
+>**A Note on Stability**: LangChain and LangGraph are always evolving. The Agent Middleware API is a newer feature and may change in future versions, which could break the implementation of Method 2. Method 1 (Callable Prompt) relies on a more core, stable feature.
 
 ## Directory Structure
 
@@ -183,7 +183,7 @@ You can playaround with both methods and see what works best.
 └── memsrv/
     ├── README.md                       # This file
     └── src/
-        ├── config.py                   # Configuration file for selecting LLMs and vector DBs
+        ├── config.py                   # Configuration file for selecting LLMs and vector DBs and respective config vars
         ├── server.py                   # Entry point for running the FastAPI server
         └── memsrv/
             ├── api/
@@ -196,11 +196,14 @@ You can playaround with both methods and see what works best.
             │   └── prompts.py          # Prompts used for fact extraction
             ├── db/
             │   ├── base_adapter.py     # Abstract base class for database adapters
+            │   ├── utils.py            # Utils file for common funcs for db
             │   └── adapters/
             │       ├── __init__.py
-            │       ├── chroma.py       # ChromaDB adapter
+            │       ├── chroma_lite.py  # ChromaDBLite adapter (local)
+            │       ├── chroma.py       # ChromaDB adapter (client-server)
             │       └── postgres.py     # Postgres adapter
             ├── embeddings/
+            │   ├── base_config.py      # Base class for embedding configurations
             │   ├── base_embedder.py    # Abstract base class for embedding providers
             │   └── providers/
             │       └── gemini.py       # Gemini embedding provider

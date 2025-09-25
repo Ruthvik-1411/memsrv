@@ -7,6 +7,7 @@ from typing import Any, Type
 from config import memory_config
 from memsrv.llms.base_config import BaseLLMConfig
 from memsrv.llms.base_llm import BaseLLM
+from memsrv.embeddings.base_config import BaseEmbeddingConfig
 from memsrv.embeddings.base_embedder import BaseEmbedding
 from memsrv.db.base_adapter import VectorDBAdapter
 from memsrv.core.memory_service import MemoryService
@@ -52,20 +53,26 @@ class EmbeddingFactory:
         """Creates the embedding instance using the config"""
         provider = memory_config.EMBEDDING_PROVIDER
         model_name = memory_config.EMBEDDING_MODEL
+        embedding_dim = memory_config.EMBEDDING_DIM
 
         if provider not in cls.provider_mapping:
             raise ValueError(f"Unsupported Embedding provider: {provider}.")
 
-        embedder_class = load_class(cls.provider_mapping[provider])
         # FIXME: Using llm key for now but should seperate later
-        return embedder_class(model_name=model_name, api_key=memory_config.llm_api_key)
+        embedder_class = load_class(cls.provider_mapping[provider])
+        config = BaseEmbeddingConfig(model_name=model_name,
+                                     api_key=memory_config.llm_api_key,
+                                     embedding_dims=embedding_dim)
+
+        return embedder_class(config)
 
 class DBFactory:
     """Factory for creating database adapter instances"""
 
     provider_mapping = {
+        "chroma_lite": "memsrv.db.adapters.chroma_lite.ChromaLiteDBAdapter",
         "chroma": "memsrv.db.adapters.chroma.ChromaDBAdapter",
-        "postgres": "memsrv.db.adapters.postgres.PostgresDBAdapter",
+        "postgres": "memsrv.db.adapters.postgres.PostgresDBAdapter"
     }
 
     @classmethod
