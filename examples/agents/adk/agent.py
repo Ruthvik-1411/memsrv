@@ -6,10 +6,11 @@ from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.tools import ToolContext
 
+from shared.memory_client import MemoryClient
+
 from .tools import get_current_time, calculate_expression
 from .custom_memory_tool import CustomMemoryTool
 
-from shared.memory_client import MemoryClient
 # To load the google api keys
 load_dotenv()
 

@@ -4,8 +4,8 @@ from langchain_core.messages import SystemMessage
 from langchain.agents.middleware import AgentState
 from langgraph.runtime import Runtime
 
-from .prompt import BASE_SYSTEM_INSTRUCTIONS
 from shared.memory_client import MemoryClient
+from .prompt import BASE_SYSTEM_INSTRUCTIONS
 
 memory = MemoryClient()
 
