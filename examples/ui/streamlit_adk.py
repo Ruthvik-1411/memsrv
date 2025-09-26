@@ -3,7 +3,7 @@
 import uuid
 import asyncio
 import streamlit as st
-from adk_agent.response_manager import ResponseManager
+from agents.adk.response_manager import ResponseManager
 from shared.memory_client import MemoryClient
 
 st.set_page_config(page_title="Agent Response Manager", layout="wide")

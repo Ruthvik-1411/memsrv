@@ -34,7 +34,12 @@ class CustomMemoryTool(BaseTool):
 
         # We fetch memories associated with this user and app from our memory service, memsrv
         # See https://github.com/Ruthvik-1411/memsrv for more details on how the service works
-        raw_user_memories = memory.get_memories(user_id=user_id, app_id=app_name)
+        try:
+            raw_user_memories = memory.get_memories(user_id=user_id, app_id=app_name)
+        except Exception as e:
+            print("Error occured while fetching memories, proceeding without memory.")
+            return
+        
         if not raw_user_memories["memories"]:
             return
         memory_text = ""
