@@ -16,7 +16,7 @@ The service is:
 
 This design is inspired by [VertexAI Memory Bank](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/memory-bank/overview), but implemented in a lightweight, self-hosted way for developers who want full control over their agent’s memory layer.
 
-> Note: This project is still in active development. For status, milestones and next steps of this project refer [Project Milestones](./Milestones.md).
+> Note: This project is still in active development. For status, milestones and next steps of this project refer [Project Milestones](docs/Milestones.md#project-milestones).
 
 ## High level architecture and Flow
 <img src="assets/memsrv_arch.png">
@@ -83,11 +83,11 @@ python server.py
 # or
 uv run server.py
 ```
-This will start the server at `http://0.0.0.0:8090`.
+This will start the server at `http://localhost:8090`.
 
 ### Interacting with the API
 
-The API documentation is available at `http://0.0.0.0:8090/api/v1/docs` after the server is running. You can use this documentation to explore the available endpoints and test them out.
+The API documentation is available at `http://localhost:8090/api/v1/docs` after the server is running. You can use this documentation to explore the available endpoints and test them out.
 
 ## Core Functionality
 
@@ -111,71 +111,13 @@ The service's behavior is configured through environment variables and the [`src
 
 ## Using the service in your agent
 
-> The package installations for running examples is seperated from the core service dependencies. See [Installing dependencies for examples](./Setup.md#example-dependencies) to install the packages for the examples you want to run.
+> The package installations for running examples is seperated from the core service dependencies. See [Installing dependencies for examples](docs/Setup.md#example-dependencies) to install the packages for the examples you want to run.
 
 ### Google ADK
+See [examples/agents/adk/README.md](examples/agents/adk/README.md) for details on how to use `google-adk` with memory injection and the `PreloadMemoryTool`.
 
-The `google-adk` library has an in built tool called `PreloadMemoryTool` which preloads memory for a particular user into the session. This is automatically called when a request is sent to LLM. When a user sends a message to the agent, the `PreloadMemoryTool` fetches the similar memories to this user query and **appends** the retrieved memories to the system instructions. That way the when the LLM starts responding, it will have the key information from previous sessions.
-
-In the [examples/adk_agent/custom_memory_tool.py](examples/adk_agent/custom_memory_tool.py) you can find the same implementation, but we fetch memories from our client which communicates with our memory service running on `http://localhost:8090`. See [examples/shared/memory_client.py](examples/shared/memory_client.py) for more info.
-
-To get started, make sure the `memsrv` service is running, follow the steps [here](#running-the-server).
-```bash
-# In a new terminal
-# Activate your venv
-source venv/bin/activate or venv\Scripts\activate
-
-cd examples
-
-# create a .env file. refer env.example in that folder
-streamlit run app.py
-```
-
-Open the streamlit app running at `http://localhost:8501/`. Choose the user id to test and do some conversation, possibly saying some facts about you, name, likes etc. Once done, click on new session. We add memories after a session is completed, hence, when you now say hi or hello, the agent should be using the information from your previous session.
-
-### LangChain/LangGraph
-For agents built with LangChain and LangGraph, the process of injecting memory into the context is not standardized in the same way as google-adk. It requires a more custom approach. There are essentially two primary methods to dynamically modify the system prompt with user memories before the LLM is called.
-The implementation can be found in [examples/langchain_agent](examples/langchain_agent/). To run the example, first ensure the memsrv is running, then execute the following:
-> PATCH: Since we are using the latest langchain lib, install the latest version using, <br>`uv pip install --pre -U langchain==1.0.0a6`
-```bash
-# Activate your venv
-source venv/bin/activate # or venv\Scripts\activate
-
-cd examples
-
-# create a .env file. refer env.example in that folder (add langsmith tracing vars if needed)
-streamlit run app_langchain.py
-```
-#### Method 1: Using a Callable Prompt
-
-This is a straightforward and stable method where we pass a function directly as the prompt when creating the agent.
-This function, `preload_memory_prompt`, uses the agent's current state (containing the user_id/app_id) to fetch memories and construct a new system prompt dynamically. The complete logic can be found in [examples/langchain_agent/custom_memory_tool.py](examples/langchain_agent/custom_memory_tool.py).
-```python
-# In langchain_agent/agent.py
-root_agent = create_agent(
-    ...
-    prompt=preload_memory_prompt, # The prompt is a callable/function
-    state_schema=CustomAgentState,
-    ...
-)
-```
-#### Method 2: Using Agent Middleware
-
-This is a more advanced approach using `AgentMiddleware` to statelessly intercept the request just before it's sent to the model.
-We use `DynamicSystemPromptMiddleware` which takes a function, `preload_memory_prompt_for_middleware`. This function accesses runtime context (like user_id/app_id) to fetch memories and returns the new prompt string, which the middleware then injects into the model request. The implementation details are in [examples/langchain_agent/agent.py](examples/langchain_agent/agent.py) and [examples/langchain_agent/custom_memory_tool.py](examples/langchain_agent/custom_memory_tool.py).
-```python
-# In langchain_agent/agent.py
-custom_memory_middleware = DynamicSystemPromptMiddleware(preload_memory_prompt_for_middleware)
-
-root_agent = create_agent(
-    ...
-    middleware=[custom_memory_middleware],
-    context_schema=CustomAgentState,
-    ...
-)
-```
-You can play around with both methods and see what works best.
->**A Note on Stability**: LangChain and LangGraph are always evolving. The Agent Middleware API is a newer feature and may change in future versions, which could break the implementation of Method 2. Method 1 (Callable Prompt) relies on a more core, stable feature.
+### LangChain / LangGraph
+See [examples/agents/langchain/README.md](examples/agents/langchain/README.md) for details on integrating memory into agents built with LangChain or LangGraph, including both the **Callable Prompt** and **Agent Middleware** approaches.
 
 ## Directory Structure
 

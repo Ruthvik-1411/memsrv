@@ -1,14 +1,16 @@
 """Core module for agent orchestration"""
 # pylint: disable=protected-access
 from typing import List
-from google.adk.agents import Agent
-from google.adk.tools import ToolContext
-from adk_agent.tools import get_current_time, calculate_expression
-from adk_agent.custom_memory_tool import CustomMemoryTool
-
 from dotenv import load_dotenv
 
+from google.adk.agents import Agent
+from google.adk.tools import ToolContext
+
 from shared.memory_client import MemoryClient
+
+from .tools import get_current_time, calculate_expression
+from .custom_memory_tool import CustomMemoryTool
+
 # To load the google api keys
 load_dotenv()
 

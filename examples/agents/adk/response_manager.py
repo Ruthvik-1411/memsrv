@@ -8,7 +8,7 @@ from google.adk.artifacts import InMemoryArtifactService
 from google.adk.memory.in_memory_memory_service import InMemoryMemoryService
 from google.adk.sessions import InMemorySessionService
 
-from adk_agent.agent import root_agent
+from .agent import root_agent
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
