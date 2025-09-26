@@ -36,8 +36,8 @@ class CustomMemoryTool(BaseTool):
         # See https://github.com/Ruthvik-1411/memsrv for more details on how the service works
         try:
             raw_user_memories = memory.get_memories(user_id=user_id, app_id=app_name)
-        except:
-            print("Error occured while fetching memories, proceeding without memory.")
+        except Exception as e:
+            print(f"Error occured while fetching memories, proceeding without memory. Error: {str(e)}")
             return
 
         if not raw_user_memories["memories"]:
