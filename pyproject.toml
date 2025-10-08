@@ -9,6 +9,11 @@ dependencies = [
     "chromadb>=1.1.0",
     "fastapi>=0.116.2",
     "google-genai>=1.38.0",
+    "openinference-semantic-conventions>=0.1.23",
+    "opentelemetry-api>=1.37.0",
+    "opentelemetry-exporter-otlp>=1.37.0",
+    "opentelemetry-instrumentation-fastapi>=0.58b0",
+    "opentelemetry-sdk>=1.37.0",
     "pydantic-settings>=2.10.1",
     "sqlalchemy>=2.0.43",
 ]

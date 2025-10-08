@@ -6,6 +6,9 @@ from memsrv.utils.logger import get_logger
 from memsrv.embeddings.base_embedder import BaseEmbedding
 from memsrv.embeddings.base_config import BaseEmbeddingConfig
 
+from memsrv.telemetry.tracing import traced_span
+from memsrv.telemetry.constants import CustomSpanKinds, CustomSpanNames
+
 logger = get_logger(__name__)
 
 class GeminiEmbedding(BaseEmbedding):
@@ -13,7 +16,8 @@ class GeminiEmbedding(BaseEmbedding):
     def __init__(self, config: Optional[BaseEmbeddingConfig]=None):
         super().__init__(config=config)
         self.client = geminiClient(api_key=self.config.api_key)
-
+    
+    @traced_span(__name__, kind=CustomSpanKinds.EMBEDDING.value)
     async def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         """Generates embeddings for a list of texts using Gemini embedding models."""
         try:

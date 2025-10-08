@@ -44,6 +44,11 @@ class MemoryConfig(BaseSettings):
     # should be added in valid dict format, they are directly unpacked
     DB_PROVIDER_CONFIG: Dict[str, Any] = {}
 
+    ENABLE_OTEL: bool = False
+    OTEL_SERVICE_NAME: Optional[str] = "memsrv"
+    OTEL_EXPORTER_OTLP_ENDPOINT: Optional[str]
+    OTEL_EXPORTER_OTLP_HEADERS: Optional[str]
+
     @property
     def llm_api_key(self) -> str:
         """Reads the api key based on provider"""

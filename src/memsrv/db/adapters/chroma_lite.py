@@ -7,6 +7,9 @@ from memsrv.db.base_adapter import VectorDBAdapter
 from memsrv.db.utils import serialize_items
 from memsrv.models.response import QueryResponse
 
+from memsrv.telemetry.tracing import traced_span
+from memsrv.telemetry.constants import CustomSpanKinds, CustomSpanNames
+
 logger = get_logger(__name__)
 
 class ChromaLiteDBAdapter(VectorDBAdapter):
@@ -53,7 +56,8 @@ class ChromaLiteDBAdapter(VectorDBAdapter):
                                              configuration=config)
 
         return True
-
+    
+    @traced_span(__name__, kind=CustomSpanKinds.DB.value)
     async def add(self, items):
 
         collection = self.client.get_collection(name=self.collection_name)

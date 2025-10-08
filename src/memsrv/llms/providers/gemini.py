@@ -5,6 +5,10 @@ from google.genai.client import Client as geminiClient
 from memsrv.llms.base_config import BaseLLMConfig
 from memsrv.llms.base_llm import BaseLLM
 
+from memsrv.telemetry.tracing import traced_span, safe_serialize
+from memsrv.telemetry.constants import CustomSpanKinds, CustomSpanNames
+from memsrv.telemetry.helpers import trace_llm_call
+
 class GeminiModel(BaseLLM):
     """Generation module for invoking gemini API"""
     def __init__(self, config: Optional[BaseLLMConfig]=None):
@@ -16,6 +20,7 @@ class GeminiModel(BaseLLM):
         api_key = self.config.api_key
         self.client = geminiClient(api_key=api_key)
 
+    @traced_span(__name__, kind=CustomSpanKinds.LLM.value)
     async def generate_response(self,
                           message: str,
                           system_instruction: str = None,
@@ -50,6 +55,7 @@ class GeminiModel(BaseLLM):
         )
 
         if hasattr(response, "text") and response.text:
+            trace_llm_call(model=self.config.model_name, prompt=safe_serialize(contents), response=response.text)
             return response.text
 
         if hasattr(response, "candidates") and response.candidates:

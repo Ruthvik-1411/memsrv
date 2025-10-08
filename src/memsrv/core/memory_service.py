@@ -12,6 +12,11 @@ from memsrv.models.request import MemoryCreateRequest, MemoryUpdateRequest
 from memsrv.models.response import ActionConfirmation, MemoryResponse
 
 from memsrv.core.consolidator import consolidate_facts
+from opentelemetry import trace
+from memsrv.telemetry.tracing import traced_span, start_child_span, safe_serialize
+from memsrv.telemetry.helpers import trace_llm_call
+from memsrv.telemetry.constants import CustomSpanKinds, CustomSpanNames
+from openinference.semconv.trace import SpanAttributes, OpenInferenceSpanKindValues
 
 logger = get_logger(__name__)
 
@@ -54,6 +59,7 @@ class MemoryService:
 
         return await self.db.get_by_ids(ids=memory_ids)
 
+    @traced_span(CustomSpanNames.GENERATE_MEMORIES.value, kind=CustomSpanKinds.INTERNAL.value)
     async def add_memories_from_conversation(self,
                                     messages: List,
                                     metadata: MemoryMetadata,
@@ -62,14 +68,20 @@ class MemoryService:
         parsed_messages = parse_messages(messages)
         if not parsed_messages.strip():
             return []
-
+        span = trace.get_current_span()
+        span.set_attribute("memsrv.input.prompt", parsed_messages[:500])
+        span.set_attribute("memsrv.input.metadata", safe_serialize(metadata))
         facts = await extract_facts(parsed_messages, self.llm)
+        # extract_span.set_attribute("memsrv.facts.count", len(facts))
+        # trace_llm_call(model=self.llm.config.model_name, prompt=parsed_messages, response=facts)
+
         if not facts:
             return []
 
         if consolidation:
             response_action = await self.consolidate_and_add_memories(facts=facts,
-                                                                      metadata=metadata)
+                                                                    metadata=metadata)
+                # consolidate_span.set_attribute("memsrv.actions", safe_serialize(response_action))
         else:
             memories_to_create = MemoryCreateRequest(documents=facts, metadata=metadata)
 
@@ -77,6 +89,7 @@ class MemoryService:
 
         return response_action
 
+    @traced_span(CustomSpanNames.FACT_CONSOLIDATION.value, kind=CustomSpanKinds.BACKGROUND.value)
     async def consolidate_and_add_memories(self, facts: List[str], metadata: MemoryMetadata):
         """Adds memories to db after consolidating them"""
 

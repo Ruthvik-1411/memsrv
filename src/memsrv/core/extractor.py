@@ -3,6 +3,9 @@ from pydantic import BaseModel, Field
 from memsrv.llms.base_llm import BaseLLM
 from memsrv.core.prompts import FACT_EXTRACTION_PROMPT
 
+from memsrv.telemetry.tracing import traced_span
+from memsrv.telemetry.constants import CustomSpanKinds, CustomSpanNames
+
 class Facts(BaseModel):
     """Pydantic models for facts extracted from conversation"""
     facts: list[str] = Field(description="The facts about the user from the conversation")
@@ -29,6 +32,7 @@ def parse_messages(messages: list) -> str:
                     parsed_result.append(f"Assistant: {text}")
     return "\n".join(parsed_result)
 
+@traced_span(CustomSpanNames.FACT_EXTRACTION.value, CustomSpanKinds.BACKGROUND.value)
 async def extract_facts(parsed_messages: str, llm: BaseLLM) -> list[str]:
     """Extracts facts using the provided LLM"""
     response = await llm.generate_response(
