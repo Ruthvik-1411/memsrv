@@ -84,7 +84,7 @@ class MemoryService:
 
         return response_action
 
-    @traced_span(CustomSpanNames.FACT_CONSOLIDATION.value, kind=CustomSpanKinds.CHAIN.value)
+    @traced_span(CustomSpanNames.FACT_CONSOLIDATION_CHAIN.value, kind=CustomSpanKinds.CHAIN.value)
     async def consolidate_and_add_memories(self, facts: List[str], metadata: MemoryMetadata):
         """Adds memories to db after consolidating them"""
 
@@ -180,6 +180,7 @@ class MemoryService:
 
         return response_actions
 
+    @traced_span(CustomSpanNames.CREATE_MEMORIES.value, kind=CustomSpanKinds.CHAIN.value)
     async def create_memories(self, data: MemoryCreateRequest):
         """Directly creates memories and adds to DB"""
 
@@ -222,6 +223,7 @@ class MemoryService:
 
         return response_action
 
+    @traced_span(CustomSpanNames.UPDATE_MEMORIES.value, kind=CustomSpanKinds.CHAIN.value)
     async def update_memories(self, update_items: List[MemoryUpdateRequest]):
         """Updates memory with given id and fact content"""
 
@@ -280,6 +282,7 @@ class MemoryService:
 
         return response_action, partial_failure
 
+    @traced_span(CustomSpanNames.DELETE_MEMORIES.value, kind=CustomSpanKinds.CHAIN.value)
     async def delete_memories(self, memory_ids: List[str]):
         """Delete memories from collection"""
 
@@ -343,6 +346,7 @@ class MemoryService:
 
         return memories
 
+    @traced_span(kind=CustomSpanKinds.CHAIN.value)
     async def search_similar_memories(self,
                                       query_texts: Union[str, List[str]],
                                       filters: Dict[str, Any] = None,

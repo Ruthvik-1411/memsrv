@@ -12,6 +12,7 @@ class CustomSpanNames(str, Enum):
     DELETE_MEMORIES = "DeleteMemories"
 
     FACT_EXTRACTION = "ExtractFacts"
+    FACT_CONSOLIDATION_CHAIN = "ConsolidateFactsChain"
     FACT_CONSOLIDATION = "ConsolidateFacts"
 
     DB_CREATE = "db.create"

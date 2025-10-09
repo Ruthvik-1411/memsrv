@@ -57,7 +57,7 @@ class ChromaLiteDBAdapter(VectorDBAdapter):
 
         return True
     
-    @traced_span(__name__, kind=CustomSpanKinds.DB.value)
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def add(self, items):
 
         collection = self.client.get_collection(name=self.collection_name)
@@ -73,7 +73,7 @@ class ChromaLiteDBAdapter(VectorDBAdapter):
         logger.info(f"Successfully added {len(items)} items to chroma collection.")
         return serialized_items["ids"]
 
-    @traced_span(__name__, kind=CustomSpanKinds.DB.value)
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def get_by_ids(self, ids):
 
         collection = self.client.get_collection(name=self.collection_name)
@@ -86,7 +86,7 @@ class ChromaLiteDBAdapter(VectorDBAdapter):
             metadatas=[results.get("metadatas", [])]
         )
 
-    @traced_span(__name__, kind=CustomSpanKinds.DB.value)
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def query_by_filter(self, filters, limit):
 
         collection = self.client.get_collection(name=self.collection_name)
@@ -103,7 +103,7 @@ class ChromaLiteDBAdapter(VectorDBAdapter):
             metadatas=[results.get("metadatas", [])]
         )
 
-    @traced_span(__name__, kind=CustomSpanKinds.DB.value)
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def query_by_similarity(self,
                                   query_embeddings,
                                   query_texts=None,
@@ -126,7 +126,7 @@ class ChromaLiteDBAdapter(VectorDBAdapter):
             distances=results.get("distances", [])
         )
 
-    @traced_span(__name__, kind=CustomSpanKinds.DB.value)
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def update(self, items):
 
         collection = self.client.get_collection(name=self.collection_name)
@@ -145,7 +145,7 @@ class ChromaLiteDBAdapter(VectorDBAdapter):
         logger.info(f"Successfully updated {len(items)} items to chroma collection.")
         return ids_to_update
 
-    @traced_span(__name__, kind=CustomSpanKinds.DB.value)
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def delete(self, fact_ids):
 
         collection = self.client.get_collection(name=self.collection_name)

@@ -17,7 +17,7 @@ class GeminiEmbedding(BaseEmbedding):
         super().__init__(config=config)
         self.client = geminiClient(api_key=self.config.api_key)
     
-    @traced_span(__name__, kind=CustomSpanKinds.EMBEDDING.value)
+    @traced_span(kind=CustomSpanKinds.EMBEDDING.value)
     async def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         """Generates embeddings for a list of texts using Gemini embedding models."""
         try:
