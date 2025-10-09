@@ -9,6 +9,8 @@ from memsrv.llms.base_llm import BaseLLM
 from memsrv.core.prompts import FACT_CONSOLIDATION_PROMPT
 
 from memsrv.utils.logger import get_logger
+from memsrv.telemetry.tracing import traced_span
+from memsrv.telemetry.constants import CustomSpanKinds, CustomSpanNames
 
 logger = get_logger(__name__)
 
@@ -32,6 +34,7 @@ class ConsolidationPlan(BaseModel):
     """Complete plan for consolidating memories"""
     plan: List[ConsolidationPlanItem]
 
+@traced_span(CustomSpanNames.FACT_CONSOLIDATION.value, CustomSpanKinds.CHAIN.value)
 async def consolidate_facts(new_facts: List[str],
                       existing_memories: List[Dict[str, Any]],
                       llm: BaseLLM) -> list[str]:

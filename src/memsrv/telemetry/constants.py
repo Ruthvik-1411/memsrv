@@ -28,7 +28,9 @@ class CustomSpanKinds(str, Enum):
     INTERNAL = "INTERNAL"
     MEMORY = "MEMORY"
     LLM = "LLM"
+    CHAIN = "CHAIN"
     EMBEDDING = "EMBEDDING"
+    RETRIEVER = "RETRIEVER"
 
 COMMON_ATTRIBUTES = {
     "component": "memsrv",

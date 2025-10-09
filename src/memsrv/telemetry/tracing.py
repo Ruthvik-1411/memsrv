@@ -21,7 +21,7 @@ def get_tracer():
     """Returns the global tracer or a no-op tracer."""
     return _tracer or trace.NoOpTracerProvider().get_tracer("noop")
 
-def traced_span(name: str, kind: str = None, **static_attrs):
+def traced_span(name: str = None, kind: str = None, **static_attrs):
     """Decorator for async functions to add spans safely."""
     def decorator(func):
         if hasattr(func, "_is_traced"):  # prevent double wrapping
@@ -31,7 +31,8 @@ def traced_span(name: str, kind: str = None, **static_attrs):
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
             tracer = get_tracer()
-            with tracer.start_as_current_span(name) as span:
+            span_name = name or func.__qualname__
+            with tracer.start_as_current_span(span_name) as span:
                 if kind:
                     span.set_attribute(SpanAttributes.OPENINFERENCE_SPAN_KIND, kind)
                 for k, v in {**COMMON_ATTRIBUTES, **static_attrs}.items():
@@ -58,7 +59,11 @@ def start_child_span(name: str, **attrs):
 
 def safe_serialize(obj) -> str:
     """Convert an object to JSON safely (for attributes)."""
+    if obj is None:
+        return None
+    if isinstance(obj, (str, int, float, bool)):
+        return obj
     try:
-        return json.dumps(obj, ensure_ascii=False, default=str)[:4000]
+        return json.dumps(obj, ensure_ascii=False)[:4000]
     except Exception:
         return "<not serializable>"

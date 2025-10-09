@@ -32,7 +32,7 @@ def parse_messages(messages: list) -> str:
                     parsed_result.append(f"Assistant: {text}")
     return "\n".join(parsed_result)
 
-@traced_span(CustomSpanNames.FACT_EXTRACTION.value, CustomSpanKinds.BACKGROUND.value)
+@traced_span(CustomSpanNames.FACT_EXTRACTION.value, CustomSpanKinds.CHAIN.value)
 async def extract_facts(parsed_messages: str, llm: BaseLLM) -> list[str]:
     """Extracts facts using the provided LLM"""
     response = await llm.generate_response(
