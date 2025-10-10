@@ -15,12 +15,9 @@ class CustomSpanNames(str, Enum):
     FACT_CONSOLIDATION_CHAIN = "ConsolidateFactsChain"
     FACT_CONSOLIDATION = "ConsolidateFacts"
 
-    DB_CREATE = "db.create"
-    DB_UPDATE = "db.update"
-    DB_DELETE = "db.delete"
-    DB_QUERY_ID = "db.query.id"
-    DB_QUERY_FILTER = "db.query.metadata"
-    DB_QUERY_SIMILARITY = "db.query.similarity"
+    CREATE_MEMORIES_API = "[API] CreateMemoriesAPI"
+    UPDATE_MEMORIES_API = "[API] UpdateMemoriesAPI"
+    DELETE_MEMORIES_API = "[API] DeleteMemoriesAPI"
 
 class CustomSpanKinds(str, Enum):
     DB = "DB"

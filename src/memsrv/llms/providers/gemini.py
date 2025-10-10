@@ -5,8 +5,8 @@ from google.genai.client import Client as geminiClient
 from memsrv.llms.base_config import BaseLLMConfig
 from memsrv.llms.base_llm import BaseLLM
 
-from memsrv.telemetry.tracing import traced_span, safe_serialize
-from memsrv.telemetry.constants import CustomSpanKinds, CustomSpanNames
+from memsrv.telemetry.tracing import traced_span
+from memsrv.telemetry.constants import CustomSpanKinds
 from memsrv.telemetry.helpers import trace_llm_call
 
 class GeminiModel(BaseLLM):
@@ -61,7 +61,7 @@ class GeminiModel(BaseLLM):
         if hasattr(response, "text") and response.text:
             trace_llm_call(provider="gemini",
                            model_name=self.config.model_name,
-                           invocation_parameters=safe_serialize(generation_config),
+                           invocation_parameters=generation_config,
                            input_messages=contents,
                            output_messages=response.text,
                            token_count=usage_data)

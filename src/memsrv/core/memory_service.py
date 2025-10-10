@@ -3,17 +3,16 @@
 from typing import List, Dict, Optional, Any, Union
 
 from memsrv.core.extractor import parse_messages, extract_facts
+from memsrv.core.consolidator import consolidate_facts
 from memsrv.llms.base_llm import BaseLLM
 from memsrv.db.base_adapter import VectorDBAdapter
 from memsrv.embeddings.base_embedder import BaseEmbedding
-from memsrv.utils.logger import get_logger
 from memsrv.models.memory import MemoryMetadata, MemoryInDB, MemoryUpdatePayload
 from memsrv.models.request import MemoryCreateRequest, MemoryUpdateRequest
 from memsrv.models.response import ActionConfirmation, MemoryResponse
 
-from memsrv.core.consolidator import consolidate_facts
-from opentelemetry import trace
-from memsrv.telemetry.tracing import traced_span, safe_serialize
+from memsrv.utils.logger import get_logger
+from memsrv.telemetry.tracing import traced_span
 from memsrv.telemetry.constants import CustomSpanKinds, CustomSpanNames
 
 logger = get_logger(__name__)
@@ -59,17 +58,15 @@ class MemoryService:
 
     @traced_span(CustomSpanNames.GENERATE_MEMORIES.value, kind=CustomSpanKinds.CHAIN.value)
     async def add_memories_from_conversation(self,
-                                    messages: List,
-                                    metadata: MemoryMetadata,
-                                    consolidation: bool = True) -> list[str]:
+                                             messages: List,
+                                             metadata: MemoryMetadata,
+                                             consolidation: bool = True) -> list[str]:
         """Extracts facts from conversations and adds them to vector DB"""
         parsed_messages = parse_messages(messages)
         if not parsed_messages.strip():
             return []
-        span = trace.get_current_span()
-        span.set_attribute("memsrv.input.prompt", parsed_messages[:500])
-        span.set_attribute("memsrv.input.metadata", safe_serialize(metadata))
-        facts = await extract_facts(parsed_messages, self.llm)
+        facts = await extract_facts(parsed_messages=parsed_messages,
+                                    llm=self.llm)
 
         if not facts:
             return []
@@ -78,7 +75,8 @@ class MemoryService:
             response_action = await self.consolidate_and_add_memories(facts=facts,
                                                                       metadata=metadata)
         else:
-            memories_to_create = MemoryCreateRequest(documents=facts, metadata=metadata)
+            memories_to_create = MemoryCreateRequest(documents=facts,
+                                                     metadata=metadata)
 
             response_action = await self.create_memories(data=memories_to_create)
 
@@ -100,7 +98,7 @@ class MemoryService:
             logger.info("No similar memories found. \
                         Skipping consolidation and adding new facts directly.")
             create_request = MemoryCreateRequest(documents=facts, metadata=metadata)
-            return await self.create_memories(create_request)
+            return await self.create_memories(data=create_request)
 
         similar_memories_dict = {}
         for memory in similar_memories:
@@ -126,8 +124,8 @@ class MemoryService:
         logger.info(f"Existing Memories: {existing_memories}")
 
         consolidation_result = await consolidate_facts(new_facts=facts,
-                                                 existing_memories=existing_memories,
-                                                 llm=self.llm)
+                                                       existing_memories=existing_memories,
+                                                       llm=self.llm)
         logger.info(f"Consolidation Plan: {consolidation_result.get('plan')}")
         memories_to_add = []
         memories_to_update = []
@@ -168,13 +166,13 @@ class MemoryService:
         if memories_to_add:
             create_request = MemoryCreateRequest(documents=memories_to_add,
                                                  metadata=metadata)
-            response_actions.extend(await self.create_memories(create_request))
+            response_actions.extend(await self.create_memories(data=create_request))
 
         if memories_to_update:
-            response_actions.extend(await self.update_memories(memories_to_update))
+            response_actions.extend(await self.update_memories(update_items=memories_to_update))
 
         if memories_to_delete:
-            response_actions.extend(await self.delete_memories(memories_to_delete))
+            response_actions.extend(await self.delete_memories(memory_ids=memories_to_delete))
 
         logger.info(response_actions)
 
@@ -210,13 +208,14 @@ class MemoryService:
 
         return response
 
+    @traced_span(CustomSpanNames.CREATE_MEMORIES_API.value, kind=CustomSpanKinds.CHAIN.value)
     async def create_raw_memories(self, data: MemoryCreateRequest,
-                               consolidation: bool = True):
-        """Add memories directly from raw memory content after consolidation"""
+                                  consolidation: bool = True):
+        """Add memories directly from raw memory content after consolidation, API facing"""
 
         if consolidation:
-            response_action = await self.consolidate_and_add_memories(data.documents,
-                                                                      data.metadata)
+            response_action = await self.consolidate_and_add_memories(facts=data.documents,
+                                                                      metadata=data.metadata)
             return response_action
 
         response_action = await self.create_memories(data=data)
@@ -253,6 +252,7 @@ class MemoryService:
 
         return response
 
+    @traced_span(CustomSpanNames.UPDATE_MEMORIES_API.value, kind=CustomSpanKinds.CHAIN.value)
     async def update_raw_memories(self, update_items: List[MemoryUpdateRequest]):
         """API facing update memories method, validates if ids exists and then updates"""
         item_ids = [update_item.id for update_item in update_items]
@@ -299,6 +299,7 @@ class MemoryService:
 
         return response
 
+    @traced_span(CustomSpanNames.DELETE_MEMORIES_API.value, kind=CustomSpanKinds.CHAIN.value)
     async def delete_raw_memories_by_id(self, memory_ids: List[str]):
         """API facing method for deleting memories by id, validates them before deleting"""
 
@@ -325,7 +326,7 @@ class MemoryService:
         return response_action, partial_failure
 
     # TODO: Add delete by user_id and app_ids
-
+    @traced_span(kind=CustomSpanKinds.CHAIN.value)
     async def search_by_metadata(self, filters: Dict[str, Any] = None, limit: int = 20):
         """Queries vector db with provided filters"""
 

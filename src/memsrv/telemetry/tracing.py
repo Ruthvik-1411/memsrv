@@ -1,13 +1,16 @@
 """Helper functions for spans, attributes, decorators"""
 import functools
 import json
-import logging
+from pydantic import BaseModel
+
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 from openinference.semconv.trace import SpanAttributes
+
+from memsrv.utils.logger import get_logger
 from .constants import COMMON_ATTRIBUTES
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Global tracer reference (can be None)
 _tracer = None
@@ -21,7 +24,7 @@ def get_tracer():
     """Returns the global tracer or a no-op tracer."""
     return _tracer or trace.NoOpTracerProvider().get_tracer("noop")
 
-def traced_span(name: str = None, kind: str = None, **static_attrs):
+def traced_span(name: str = None, kind: str = None,  record_io: bool = True, **static_attrs):
     """Decorator for async functions to add spans safely."""
     def decorator(func):
         if hasattr(func, "_is_traced"):  # prevent double wrapping
@@ -38,7 +41,19 @@ def traced_span(name: str = None, kind: str = None, **static_attrs):
                 for k, v in {**COMMON_ATTRIBUTES, **static_attrs}.items():
                     span.set_attribute(k, v)
                 try:
+                    if record_io:
+                        call_args = args
+                        # Skip self or cls args
+                        if call_args and hasattr(call_args[0], "__class__"):
+                            call_args = call_args[1:]
+
+                        function_inputs = {**{f"arg{i}": a for i, a in enumerate(call_args)}, **kwargs}
+                        span.set_attribute(SpanAttributes.INPUT_VALUE, safe_serialize(function_inputs))
+                    
                     result = await func(*args, **kwargs)
+
+                    if record_io:
+                        span.set_attribute(SpanAttributes.OUTPUT_VALUE, safe_serialize(result))
                     span.set_status(Status(StatusCode.OK))
                     return result
                 except Exception as e:
@@ -57,13 +72,36 @@ def start_child_span(name: str, **attrs):
         span.set_attribute(k, v)
     return span
 
-def safe_serialize(obj) -> str:
+def safe_serialize(obj, max_length: int = 4000) -> str:
     """Convert an object to JSON safely (for attributes)."""
     if obj is None:
         return None
     if isinstance(obj, (str, int, float, bool)):
         return obj
+    def _convert(o):
+        # Pydantic classes
+        if isinstance(o, BaseModel):
+            return o.model_dump()
+        if isinstance(o, (str, int, float, bool, type(None))):
+            return o
+        if hasattr(o, "__class__") and not isinstance(o, (dict, list, tuple, set, BaseModel)):
+            # Avoid trying to descend into defined classes
+            # We can skip these args by filtering, but check will be run all the time
+            cls_name = o.__class__.__name__
+            return f"<instance of {cls_name}>"
+        # Common builtins
+        if isinstance(o, (list, tuple, set)):
+            return [_convert(i) for i in o]
+        if isinstance(o, dict):
+            return {k: _convert(v) for k, v in o.items()}
+
+        return str(o)
+
     try:
-        return json.dumps(obj, ensure_ascii=False)[:4000]
-    except Exception:
+        logger.info("######")
+        logger.info(obj)
+        serialized = json.dumps(_convert(obj), ensure_ascii=False)
+        return serialized[:max_length]
+    except Exception as e:
+        logger.error(f"Error serializing for tracing: {str(e)}.")
         return "<not serializable>"

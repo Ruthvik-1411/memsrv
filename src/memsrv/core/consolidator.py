@@ -36,8 +36,8 @@ class ConsolidationPlan(BaseModel):
 
 @traced_span(CustomSpanNames.FACT_CONSOLIDATION.value, CustomSpanKinds.CHAIN.value)
 async def consolidate_facts(new_facts: List[str],
-                      existing_memories: List[Dict[str, Any]],
-                      llm: BaseLLM) -> list[str]:
+                            existing_memories: List[Dict[str, Any]],
+                            llm: BaseLLM) -> list[str]:
     """Extracts facts using the provided LLM and provides a consolidation plan"""
 
     message = f"""Now, consolidate the facts using the following input:
@@ -48,7 +48,6 @@ async def consolidate_facts(new_facts: List[str],
 {new_facts}
 
 """
-    logger.info(message)
 
     response = await llm.generate_response(
         system_instruction=FACT_CONSOLIDATION_PROMPT,
@@ -56,7 +55,6 @@ async def consolidate_facts(new_facts: List[str],
         response_format=ConsolidationPlan.model_json_schema()
     )
 
-    logger.info(response)
     parsed_facts_obj = ConsolidationPlan.model_validate_json(response)
 
     return parsed_facts_obj.model_dump(exclude_none=True)

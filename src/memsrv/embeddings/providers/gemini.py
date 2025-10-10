@@ -7,7 +7,8 @@ from memsrv.embeddings.base_embedder import BaseEmbedding
 from memsrv.embeddings.base_config import BaseEmbeddingConfig
 
 from memsrv.telemetry.tracing import traced_span
-from memsrv.telemetry.constants import CustomSpanKinds, CustomSpanNames
+from memsrv.telemetry.constants import CustomSpanKinds
+from memsrv.telemetry.helpers import trace_embedder_call
 
 logger = get_logger(__name__)
 
@@ -32,6 +33,9 @@ class GeminiEmbedding(BaseEmbedding):
             )
             for embedding in result.embeddings:
                 embedding_result.append(embedding.values)
+            
+            trace_embedder_call(provider=self.config.model_name)
+            
             return embedding_result
         except Exception as e:
             logger.error(f"An error occurred during embedding generation: {e}")
