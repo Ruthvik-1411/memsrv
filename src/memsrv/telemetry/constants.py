@@ -31,6 +31,8 @@ class CustomSpanKinds(str, Enum):
     RETRIEVER = "RETRIEVER"
 
 COMMON_ATTRIBUTES = {
-    "component": "memsrv",
-    "library": "opentelemetry",
+    "service.name": "memsrv",
+    "service.version": "1.0.0",
+    "service.environment": "dev",
+    "library": "opentelemetry"
 }

@@ -62,8 +62,9 @@ class GeminiModel(BaseLLM):
             trace_llm_call(provider="gemini",
                            model_name=self.config.model_name,
                            invocation_parameters=generation_config,
-                           input_messages=contents,
-                           output_messages=response.text,
+                           system_instructions=system_instruction,
+                           user_message=message,
+                           output_message=response.text,
                            token_count=usage_data)
             return response.text
 
