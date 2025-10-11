@@ -1,7 +1,5 @@
 """Custom attribute and span kind mappings"""
 from enum import Enum
-# from opentelemetry.trace import SpanKind
-# from openinference.semconv.trace import SpanAttributes, OpenInferenceSpanKindValues
 
 class CustomSpanNames(str, Enum):
     """Custom span names as used in memsrv"""

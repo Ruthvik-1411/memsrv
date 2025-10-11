@@ -1,5 +1,6 @@
 """Extracts facts from conversations using llms"""
 from pydantic import BaseModel, Field
+
 from memsrv.llms.base_llm import BaseLLM
 from memsrv.core.prompts import FACT_EXTRACTION_PROMPT
 

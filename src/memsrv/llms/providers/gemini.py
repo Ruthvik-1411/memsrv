@@ -2,11 +2,12 @@
 from typing import Optional
 from google.genai import types
 from google.genai.client import Client as geminiClient
+
 from memsrv.llms.base_config import BaseLLMConfig
 from memsrv.llms.base_llm import BaseLLM
 
-from memsrv.telemetry.tracing import traced_span
 from memsrv.telemetry.constants import CustomSpanKinds
+from memsrv.telemetry.tracing import traced_span
 from memsrv.telemetry.helpers import trace_llm_call
 
 class GeminiModel(BaseLLM):

@@ -2,13 +2,14 @@
 # pylint: disable=too-many-positional-arguments, signature-differs
 from typing import Dict, Any
 import chromadb
-from memsrv.utils.logger import get_logger
-from memsrv.db.base_adapter import VectorDBAdapter
-from memsrv.db.utils import serialize_items
-from memsrv.models.response import QueryResponse
 
+from memsrv.db.base_adapter import VectorDBAdapter
+from memsrv.models.response import QueryResponse
+from memsrv.db.utils import serialize_items
+
+from memsrv.utils.logger import get_logger
 from memsrv.telemetry.tracing import traced_span
-from memsrv.telemetry.constants import CustomSpanKinds, CustomSpanNames
+from memsrv.telemetry.constants import CustomSpanKinds
 
 logger = get_logger(__name__)
 

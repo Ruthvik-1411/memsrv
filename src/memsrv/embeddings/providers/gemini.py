@@ -2,12 +2,13 @@
 from typing import List, Optional
 from google.genai.client import Client as geminiClient
 from google.genai.types import EmbedContentConfig
-from memsrv.utils.logger import get_logger
+
 from memsrv.embeddings.base_embedder import BaseEmbedding
 from memsrv.embeddings.base_config import BaseEmbeddingConfig
 
-from memsrv.telemetry.tracing import traced_span
+from memsrv.utils.logger import get_logger
 from memsrv.telemetry.constants import CustomSpanKinds
+from memsrv.telemetry.tracing import traced_span
 from memsrv.telemetry.helpers import trace_embedder_call
 
 logger = get_logger(__name__)

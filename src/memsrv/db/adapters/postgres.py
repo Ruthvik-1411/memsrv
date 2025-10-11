@@ -1,15 +1,16 @@
 """Postgres with pgvector implementation"""
 # pylint: disable=too-many-positional-arguments, too-many-locals, signature-differs, line-too-long
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from datetime import datetime
 
 from sqlalchemy import text, exc
 from sqlalchemy.ext.asyncio import create_async_engine
-from memsrv.utils.logger import get_logger
-from memsrv.db.base_adapter import VectorDBAdapter
-from memsrv.db.utils import serialize_items
-from memsrv.models.response import QueryResponse
 
+from memsrv.db.base_adapter import VectorDBAdapter
+from memsrv.models.response import QueryResponse
+from memsrv.db.utils import serialize_items
+
+from memsrv.utils.logger import get_logger
 from memsrv.telemetry.tracing import traced_span
 from memsrv.telemetry.constants import CustomSpanKinds
 
