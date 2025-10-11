@@ -24,13 +24,16 @@ def get_tracer():
     """Returns the global tracer or a no-op tracer."""
     return _tracer or trace.NoOpTracerProvider().get_tracer("noop")
 
-def traced_span(name: str = None, kind: str = None,  record_io: bool = True, **static_attrs):
+def traced_span(name: str = None,
+                kind: str = None,
+                record_io: bool = True,
+                **static_attrs):
     """Decorator for async functions to add spans safely."""
     def decorator(func):
         if hasattr(func, "_is_traced"):  # prevent double wrapping
             return func
 
-        # TODO: Add support for sync functions as well
+        # TODO: Add support for sync functions as well later
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
             tracer = get_tracer()
@@ -46,14 +49,19 @@ def traced_span(name: str = None, kind: str = None,  record_io: bool = True, **s
                         # Skip self or cls args
                         if call_args and hasattr(call_args[0], "__class__"):
                             call_args = call_args[1:]
-
-                        function_inputs = {**{f"arg{i}": a for i, a in enumerate(call_args)}, **kwargs}
-                        span.set_attribute(SpanAttributes.INPUT_VALUE, safe_serialize(function_inputs))
+                        # If it's not key word arg, show it as arg0: val0
+                        function_inputs = {
+                            **{f"arg{i}": a for i, a in enumerate(call_args)},
+                            **kwargs
+                        }
+                        span.set_attribute(SpanAttributes.INPUT_VALUE,
+                                           safe_serialize(function_inputs))
                     
                     result = await func(*args, **kwargs)
 
                     if record_io:
-                        span.set_attribute(SpanAttributes.OUTPUT_VALUE, safe_serialize(result))
+                        span.set_attribute(SpanAttributes.OUTPUT_VALUE,
+                                           safe_serialize(result))
                     span.set_status(Status(StatusCode.OK))
                     return result
                 except Exception as e:
@@ -66,6 +74,7 @@ def traced_span(name: str = None, kind: str = None,  record_io: bool = True, **s
 
 def start_child_span(name: str, **attrs):
     """Manual span creation helper."""
+    # Will be useful later
     tracer = get_tracer()
     span = tracer.start_span(name)
     for k, v in attrs.items():
@@ -86,7 +95,7 @@ def safe_serialize(obj, max_length: int = 4000) -> str:
             return o
         if hasattr(o, "__class__") and not isinstance(o, (dict, list, tuple, set, BaseModel)):
             # Avoid trying to descend into defined classes
-            # We can skip these args by filtering, but check will be run all the time
+            # We can skip these args by filtering, but the check will be run all the time
             cls_name = o.__class__.__name__
             return f"<instance of {cls_name}>"
         # Common builtins
@@ -98,8 +107,6 @@ def safe_serialize(obj, max_length: int = 4000) -> str:
         return str(o)
 
     try:
-        logger.info("######")
-        logger.info(obj)
         serialized = json.dumps(_convert(obj), ensure_ascii=False)
         return serialized[:max_length]
     except Exception as e:

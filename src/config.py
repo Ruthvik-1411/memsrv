@@ -44,6 +44,7 @@ class MemoryConfig(BaseSettings):
     # should be added in valid dict format, they are directly unpacked
     DB_PROVIDER_CONFIG: Dict[str, Any] = {}
 
+    # Tracing env vars
     ENABLE_OTEL: bool = False
     OTEL_SERVICE_NAME: Optional[str] = "memsrv"
     OTEL_EXPORTER_OTLP_ENDPOINT: Optional[str]

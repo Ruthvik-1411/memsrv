@@ -7,9 +7,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from memsrv.api.routes import memory
-from memsrv.utils.logger import get_logger
 from memsrv.core.memory_service import MemoryService
-from memsrv.utils.factory import LLMFactory, EmbeddingFactory, DBFactory
+from memsrv.utils.factory import LLMFactory, EmbeddingFactory, DBFactory, TelemetryFactory
+
+from memsrv.utils.logger import get_logger
 from memsrv.telemetry.setup import setup_tracer
 from memsrv.telemetry.tracing import init_tracer
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -22,8 +23,8 @@ async def lifespan(fastapi_app: FastAPI):
     """Handles startup and shutdown logic for FastAPI using lifespan"""
     logger.info("Starting Memory Service setup...")
 
-    tracer = setup_tracer("memsrv")
-    init_tracer(tracer)  # register for decorators
+    tracer = TelemetryFactory.create()
+    init_tracer(tracer)
 
     if tracer:
         FastAPIInstrumentor.instrument_app(app)
