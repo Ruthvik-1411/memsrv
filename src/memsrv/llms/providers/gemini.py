@@ -2,8 +2,13 @@
 from typing import Optional
 from google.genai import types
 from google.genai.client import Client as geminiClient
+
 from memsrv.llms.base_config import BaseLLMConfig
 from memsrv.llms.base_llm import BaseLLM
+
+from memsrv.telemetry.constants import CustomSpanKinds
+from memsrv.telemetry.tracing import traced_span
+from memsrv.telemetry.helpers import trace_llm_call
 
 class GeminiModel(BaseLLM):
     """Generation module for invoking gemini API"""
@@ -16,10 +21,11 @@ class GeminiModel(BaseLLM):
         api_key = self.config.api_key
         self.client = geminiClient(api_key=api_key)
 
+    @traced_span(kind=CustomSpanKinds.LLM.value)
     async def generate_response(self,
-                          message: str,
-                          system_instruction: str = None,
-                          response_format=None):
+                                message: str,
+                                system_instruction: str = None,
+                                response_format=None):
 
         contents = []
         contents.append(
@@ -48,13 +54,19 @@ class GeminiModel(BaseLLM):
             config=types.GenerateContentConfig(**generation_config),
             contents=contents
         )
-
+        usage_data = {
+            "prompt": response.usage_metadata.prompt_token_count,
+            "completion": response.usage_metadata.candidates_token_count,
+            "total": response.usage_metadata.total_token_count
+        }
         if hasattr(response, "text") and response.text:
+            trace_llm_call(provider="gemini",
+                           model_name=self.config.model_name,
+                           invocation_parameters=generation_config,
+                           system_instructions=system_instruction,
+                           user_message=message,
+                           output_message=response.text,
+                           token_count=usage_data)
             return response.text
-
-        if hasattr(response, "candidates") and response.candidates:
-            parts = response.candidates[0].content.parts
-            if parts and hasattr(parts[0], "text"):
-                return parts[0].text
 
         return "empty response"

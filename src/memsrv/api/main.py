@@ -5,11 +5,14 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from memsrv.api.routes import memory
-from memsrv.utils.logger import get_logger
 from memsrv.core.memory_service import MemoryService
-from memsrv.utils.factory import LLMFactory, EmbeddingFactory, DBFactory
+from memsrv.utils.factory import LLMFactory, EmbeddingFactory, DBFactory, TelemetryFactory
+
+from memsrv.utils.logger import get_logger
+from memsrv.telemetry.tracing import init_tracer
 
 load_dotenv()
 logger = get_logger(__name__)
@@ -18,6 +21,15 @@ logger = get_logger(__name__)
 async def lifespan(fastapi_app: FastAPI):
     """Handles startup and shutdown logic for FastAPI using lifespan"""
     logger.info("Starting Memory Service setup...")
+
+    tracer = TelemetryFactory.create()
+    init_tracer(tracer)
+
+    if tracer:
+        FastAPIInstrumentor.instrument_app(app)
+        logger.info("Tracing instrumentation enabled.")
+    else:
+        logger.info("Tracing instrumentation skipped.")
 
     llm_instance = LLMFactory.create()
     embedder_instance = EmbeddingFactory.create()
@@ -32,6 +44,9 @@ async def lifespan(fastapi_app: FastAPI):
     logger.info("Memory Service setup complete.")
 
     yield  # The will app will run from here
+
+    if tracer:
+        FastAPIInstrumentor.uninstrument_app(app)
 
     logger.info("Shutting down Memory Service...")
 

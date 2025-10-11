@@ -1,14 +1,18 @@
 """Postgres with pgvector implementation"""
 # pylint: disable=too-many-positional-arguments, too-many-locals, signature-differs, line-too-long
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from datetime import datetime
 
 from sqlalchemy import text, exc
 from sqlalchemy.ext.asyncio import create_async_engine
-from memsrv.utils.logger import get_logger
+
 from memsrv.db.base_adapter import VectorDBAdapter
-from memsrv.db.utils import serialize_items
 from memsrv.models.response import QueryResponse
+from memsrv.db.utils import serialize_items
+
+from memsrv.utils.logger import get_logger
+from memsrv.telemetry.tracing import traced_span
+from memsrv.telemetry.constants import CustomSpanKinds
 
 logger = get_logger(__name__)
 
@@ -136,6 +140,7 @@ class PostgresDBAdapter(VectorDBAdapter):
                 else:
                     raise ValueError(e) from e
 
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def add(self, items):
 
         serialized_items = serialize_items(items)
@@ -183,6 +188,7 @@ class PostgresDBAdapter(VectorDBAdapter):
                 logger.error(f"An unexpected database error occurred: {e}")
             raise ValueError(e) from e
 
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def get_by_ids(self, ids):
 
         query = text(f"""SELECT id, document, user_id, app_id, session_id, agent_name, event_timestamp, created_at, updated_at
@@ -210,6 +216,7 @@ class PostgresDBAdapter(VectorDBAdapter):
             logger.error(f"Failed to get records by IDs: {e}")
             raise ValueError("Database error occurred") from e
 
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def query_by_filter(self, filters, limit):
 
         params = {"limit": limit}
@@ -245,6 +252,7 @@ class PostgresDBAdapter(VectorDBAdapter):
             logger.error(f"An unexpected database error occurred: {e}")
             raise ValueError(e) from e
 
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def query_by_similarity(self,
                                   query_embeddings,
                                   query_texts=None,
@@ -301,6 +309,7 @@ class PostgresDBAdapter(VectorDBAdapter):
             logger.error(f"An unexpected database error occurred: {e}")
             raise ValueError(e) from e
 
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def update(self, items):
 
         data_to_update = [
@@ -332,6 +341,7 @@ class PostgresDBAdapter(VectorDBAdapter):
             logger.error(f"An unexpected database error occurred: {e}")
             raise ValueError(e) from e
 
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def delete(self, fact_ids):
 
         delete_stmt = text(f"""

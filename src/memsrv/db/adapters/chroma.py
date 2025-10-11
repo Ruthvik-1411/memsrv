@@ -2,10 +2,14 @@
 # pylint: disable=too-many-positional-arguments, signature-differs
 from typing import Dict, Any
 import chromadb
-from memsrv.utils.logger import get_logger
+
 from memsrv.db.base_adapter import VectorDBAdapter
-from memsrv.db.utils import serialize_items
 from memsrv.models.response import QueryResponse
+from memsrv.db.utils import serialize_items
+
+from memsrv.utils.logger import get_logger
+from memsrv.telemetry.tracing import traced_span
+from memsrv.telemetry.constants import CustomSpanKinds
 
 logger = get_logger(__name__)
 
@@ -57,6 +61,7 @@ class ChromaDBAdapter(VectorDBAdapter):
 
         return True
 
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def add(self, items):
 
         collection = await self.client.get_collection(name=self.collection_name)
@@ -72,6 +77,7 @@ class ChromaDBAdapter(VectorDBAdapter):
         logger.info(f"Successfully added {len(items)} items to chroma collection.")
         return serialized_items["ids"]
 
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def get_by_ids(self, ids):
 
         collection = await self.client.get_collection(name=self.collection_name)
@@ -84,6 +90,7 @@ class ChromaDBAdapter(VectorDBAdapter):
             metadatas=[results.get("metadatas", [])]
         )
 
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def query_by_filter(self, filters, limit):
 
         collection = await self.client.get_collection(name=self.collection_name)
@@ -100,6 +107,7 @@ class ChromaDBAdapter(VectorDBAdapter):
             metadatas=[results.get("metadatas", [])]
         )
 
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def query_by_similarity(self,
                                   query_embeddings,
                                   query_texts=None,
@@ -122,6 +130,7 @@ class ChromaDBAdapter(VectorDBAdapter):
             distances=results.get("distances", [])
         )
 
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def update(self, items):
 
         collection = await self.client.get_collection(name=self.collection_name)
@@ -140,6 +149,7 @@ class ChromaDBAdapter(VectorDBAdapter):
         logger.info(f"Successfully updated {len(items)} items to chroma collection.")
         return ids_to_update
 
+    @traced_span(kind=CustomSpanKinds.DB.value)
     async def delete(self, fact_ids):
 
         collection = await self.client.get_collection(name=self.collection_name)
