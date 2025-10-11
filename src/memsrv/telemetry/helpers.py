@@ -1,11 +1,10 @@
 """Enrich common spans using helpers"""
-from typing import Optional
+from typing import Literal, List, Dict, Any
 from opentelemetry import trace
 from openinference.semconv.trace import SpanAttributes
 
 from .tracing import safe_serialize
 
-# TODO: use openinference kinds here
 def trace_llm_call(provider: str,
                    model_name: str,
                    invocation_parameters: dict,
@@ -15,22 +14,31 @@ def trace_llm_call(provider: str,
                    token_count: dict):
     """Adds standard attributes for an LLM span."""
     span = trace.get_current_span()
-    span.set_attribute(SpanAttributes.LLM_MODEL_NAME, model_name)
-    span.set_attribute(SpanAttributes.LLM_PROVIDER, provider)
+    span.set_attributes({
+        SpanAttributes.INPUT_MIME_TYPE: "application/json",
+        SpanAttributes.OUTPUT_MIME_TYPE: "application/json",
+        SpanAttributes.LLM_MODEL_NAME: model_name,
+        SpanAttributes.LLM_PROVIDER: provider
+    })
+
     if invocation_parameters:
         span.set_attribute(SpanAttributes.LLM_INVOCATION_PARAMETERS,
                            safe_serialize(invocation_parameters))
 
-    if user_message is not None:
-        input_messages = safe_serialize(to_input_messages(user_message, system_instructions))
-        span.set_attribute(SpanAttributes.LLM_INPUT_MESSAGES,
-                           safe_serialize(input_messages))
-        span.set_attribute("gen_ai.input.messages",safe_serialize(input_messages))
-    if output_message is not None:
-        output_messages = safe_serialize(to_output_messages(output_message))
-        span.set_attribute(SpanAttributes.LLM_OUTPUT_MESSAGES,
-                           output_messages)
-        span.set_attribute("gen_ai.output.messages",output_messages)
+    input_messages = [
+        {
+            "role": "system", "content": system_instructions
+        },
+        {
+            "role": "user", "content": user_message
+        }
+    ]
+    output_messages = [{"role": "model", "content": output_message}]
+    
+    span.set_attributes({
+        **get_llm_message_attributes(input_messages, "input"),
+        **get_llm_message_attributes(output_messages, "output")
+    })
 
     # Token counts will be auto flat
     if token_count:
@@ -42,46 +50,46 @@ def trace_embedder_call(provider: str):
     """Adds standard attributes for an Embedder span."""
     span = trace.get_current_span()
     span.set_attribute(SpanAttributes.EMBEDDING_MODEL_NAME, provider)
-    # Can add EMBEDDING_EMBEDDINGS = ["embds": [],"text":[]] but not needed
+    # NOTE: Can add EMBEDDING_EMBEDDINGS = ["embds": [],"text":[]] but not needed
+    
+def get_llm_message_attributes(messages: List[Dict[str, Any]],
+                               message_type: Literal["input", "output"]) -> Dict[str, Any]:
+    """
+    Flattens a list of LLM messages into OpenInference-style span attributes.
 
-def to_input_messages(user_message: str, system_instruction: Optional[str] = None):
-    """Converts system instruction and user message to input_messages format."""
-    messages = []
+    Args:
+        messages: A list of {"role": str, "content": str} dicts.
+        message_type: "input" or "output".
 
-    if system_instruction:
-        messages.append({
-            "role": "system",
-            "parts": [
-                {
-                    "type": "text",
-                    "content": system_instruction
-                }
-            ]
-        })
-
-    messages.append({
-        "role": "user",
-        "parts": [
+    Returns:
+        A flat dict of span attributes like:
             {
-                "type": "text",
-                "content": user_message
+                "llm.input_messages.0.role": "system",
+                "llm.input_messages.0.content": "system instructions",
+                "llm.input_messages.1.role": "user",
+                "llm.input_messages.1.content": "user message"
             }
-        ]
-    })
+    Ref: openinference-instrumentation/src/openinference/instrumentation/_attributes.py#L419
+    """
+    # Note: We can use this lib: https://pypi.org/project/openinference-instrumentation/
+    # to do the same thing, but why add more packages for simple utils which can be custom written
+    if message_type not in ("input", "output"):
+        raise ValueError("message_type must be 'input' or 'output'")
 
-    return messages
+    base_key = f"llm.{message_type}_messages"
+    attrs: Dict[str, Any] = {}
 
-def to_output_messages(response_text: str, finish_reason: str = "stop"):
-    """Converts response text to output_messages format."""
-    return [
-        {
-            "role": "assistant",
-            "parts": [
-                {
-                    "type": "text",
-                    "content": response_text
-                }
-            ],
-            "finish_reason": finish_reason
-        }
-    ]
+    if not isinstance(messages, list):
+        return attrs
+
+    for i, msg in enumerate(messages):
+        if not isinstance(msg, dict):
+            continue
+        role = msg.get("role")
+        content = msg.get("content")
+        if role is not None:
+            attrs[f"{base_key}.{i}.message.role"] = role
+        if content is not None:
+            attrs[f"{base_key}.{i}.message.content"] = content
+
+    return attrs
