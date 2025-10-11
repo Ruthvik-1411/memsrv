@@ -1,6 +1,25 @@
 # Memsrv
 
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.12%2B-brightgreen)
+![Status](https://img.shields.io/badge/status-active--development-yellow)
+
 **Memsrv** is a lightweight, self-hosted memory service for LLMs and agent frameworks. It helps your Agentic or LLM applications **remember facts across sessions**, retrieve information with **semantic search**, and plug into your existing agents with minimal setup. Think of it as a **memory layer** that makes your models more context-aware, consistent and personalized over time.
+
+## Table of Contents
+- [Overview](#overview)
+- [Why Memsrv?](#why-memsrv)
+- [High-Level Architecture and Flow](#high-level-architecture-and-flow)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Running the Server](#running-the-server)
+- [Core Functionality](#core-functionality)
+- [API Reference](#api-reference)
+- [Configuration](#configuration)
+- [Using the Service in Your Agent](#using-the-service-in-your-agent)
+- [Telemetry and Tracing](#telemetry-and-tracing)
+- [Directory Structure](#directory-structure)
 
 ## Overview
 
@@ -18,8 +37,12 @@ This design is inspired by [VertexAI Memory Bank](https://cloud.google.com/verte
 
 > Note: This project is still in active development. For status, milestones and next steps of this project refer [Project Milestones](docs/Milestones.md#project-milestones).
 
+## Why Memsrv?
+
+Most LLM frameworks forget previous context after each session. **Memsrv** adds a persistent, queryable memory layer that allows your AI agents to "recall" information and behave more consistently over time, without relying on proprietary hosted memory solutions. This project aims to provide a fully configurable boilerplate supporting various backend components, allowing developers to build and enhance as they need.
+
 ## High level architecture and Flow
-<img src="assets/memsrv_arch.png">
+<img src="assets/memsrv_arch.png" alt="memsrv architecture diagram">
 
 ## Getting Started
 
@@ -49,7 +72,7 @@ This design is inspired by [VertexAI Memory Bank](https://cloud.google.com/verte
     uv venv
 
     # Activate your venv
-    source venv/bin/activate or venv\Scripts\activate
+    source .venv/bin/activate or .venv\Scripts\activate
 
     # Install the packages
     uv sync
@@ -57,21 +80,8 @@ This design is inspired by [VertexAI Memory Bank](https://cloud.google.com/verte
 
 3.  Set up your environment variables:
 
-    *   Create a `.env` file in the src folder. Refer [`src/env.example`](src/env.example) for more info.
-    *   Add your Google/LLM API key(support for more providers is in progress):
-        ```bash
-        GOOGLE_API_KEY=YOUR_GOOGLE_API_KEY
-        ```
-
-    *   If using Postgres, configure the database connection(make sure your postgres connection is active):
-        ```bash
-        DATABASE_USER=your_db_user
-        DATABASE_PASSWORD=your_db_password
-        DATABASE_NAME=your_db_name
-        DATABASE_HOST=your_db_host (default: 127.0.0.1)
-        DATABASE_PORT=your_db_port (default: 5432)
-        # Make sure the database with the name exists already
-        ```
+    * Create a copy of the file [`src/env.example`](src/env.example) and rename it to `.env`.
+    * Refer [Configuration](#configuration) section for more info on how each variable is used and expected values.
 
 ### Running the Server
 
@@ -85,29 +95,62 @@ uv run server.py
 ```
 This will start the server at `http://localhost:8090`.
 
-### Interacting with the API
-
-The API documentation is available at `http://localhost:8090/api/v1/docs` after the server is running. You can use this documentation to explore the available endpoints and test them out.
-
 ## Core Functionality
 
 The `memsrv` service exposes the following core functionalities through its API:
 
-*   **Generating Memories:**  Extracts facts/memories from conversations and stores them in the database, along with metadata and vector embeddings (`/api/v1/memories/generate`).
-*   **Creating Memories:**  Directly adds facts/memories and stores them in the database (`/api/v1/memories/create`).
-*   **Retrieving Memories by Metadata:** Retrieves memories based on metadata filters such as user ID, session ID, and application ID (`/api/v1/memories`).
-*   **Retrieving Memories by Semantic Similarity:** Retrieves memories that are semantically similar to a given query, optionally filtered by metadata (`/api/v1/memories/similar`).
-*   **Updating Memories:** Updates existing memories with new content and/or metadata (`/api/v1/memories/update`).
-*   **Deleting Memories:** Deletes memories from the database by their IDs (`/api/v1/memories/delete`).
+* **Generating Memories**: Extracts facts/memories from conversations and stores them in the database, along with metadata and vector embeddings.
+* **Creating Memories**: Directly adds facts/memories and stores them in the database.
+* **Retrieving Memories by Metadata**: Retrieves memories based on metadata filters such as user ID, session ID, and application ID.
+* **Retrieving Memories by Semantic Similarity**: Retrieves memories that are semantically similar to a given query, optionally filtered by metadata.
+* **Updating Memories**: Updates existing memories with new content and/or metadata.
+* **Deleting Memories**: Deletes memories from the database by their IDs.
+
+## API Reference
+
+|Endpoint|Method|Description|
+|-|-|-|
+|`/api/v1/memories/generate`|`POST`|Extracts and stores memories from conversation text|
+|`/api/v1/memories/create`|`POST`|Manually create and store a memory. Auto Consolidation.|
+|`/api/v1/memories`|`GET`|Retrieve memories filtered by metadata|
+|`/api/v1/memories/similar`|`GET`|Retrieve semantically similar memories to a query|
+|`/api/v1/memories/update`|`PUT`|Update the text of an existing memory|
+|`/api/v1/memories/delete`|`DELETE`|Deletes memories by ID|
+
+The API documentation, request and response schema will be available at `http://localhost:8090/api/v1/docs` after the server is running. You can use this Swagger UI to explore the available endpoints and test them out.
 
 ## Configuration
 
-The service's behavior is configured through environment variables and the [`src/config.py`](src/config.py) file. Refer the [`src/env.example`](src/env.example) for the complete list of expected values. Key configuration options include:
+The service's behavior is configured through environment variables and the [`src/config.py`](src/config.py) file. Refer the [`src/env.example`](src/env.example) for the complete list of expected values.
 
-*   `LLM_PROVIDER` and `LLM_MODEL`: Specifies the LLM provider and model to use.
-*   `DB_PROVIDER`: Specifies the database backend to use (default: `chroma`, options: `chroma`, `postgres`). More are in development.
-*   `EMBEDDING_PROVIDER` and `EMBEDDING_MODEL`: Specifies the embedding provider and model to use.
-*   Database connection details (if using Postgres) and some other config like API keys.
+<details>
+    <summary>Config values and defaults</summary>
+
+|Variable|Description|Required|Default|
+|-|-|-|-|
+|`LLM_PROVIDER`|The LLM provider to use for fact extraction.|✅|`gemini`|
+| `LLM_MODEL` | Model name for the chosen LLM provider. | ✅ | `gemini-2.0-flash` |
+| `GOOGLE_API_KEY` | API key for accessing Google Gemini LLM and embeddings. | ✅ | - |
+| `EMBEDDING_PROVIDER` | Provider for generating vector embeddings. | ✅ | `gemini` |
+| `EMBEDDING_MODEL` | Embedding model to use. | ✅ | `gemini-embedding-001` |
+| `EMBEDDING_DIM` | Dimensionality of the embedding vectors. | ❌ | `768` |
+| `DB_PROVIDER` | Database backend for storing vectors. Options: `chroma_lite`, `chroma`, `postgres`. | ✅ | `chroma_lite` |
+| `DB_COLLECTION_NAME` | Collection name for storing memory entries. | ✅ | `memories` |
+| `DB_DESCRIPTION` | Optional description of the collection. | ❌ | `"Collection for memories"` |
+| `DB_PERSIST_DIR` | Path to local directory for Chroma Lite persistence. | ❌ | `./chroma_db` |
+| `DB_HOST` | Host for Chroma (HTTP) or other self hosted Vector DB. | ❌ | `localhost` |
+| `DB_PORT` | Port for Chroma (HTTP) or other self hosted Vector DB. | ❌ | `8000` (Chroma) |
+| `DATABASE_USER` | Username for Postgres. | ✅ (if Postgres) | - |
+| `DATABASE_PASSWORD` | Password for Postgres. | ✅ (if Postgres) | - |
+| `DATABASE_NAME` | Database name for Postgres. | ✅ (if Postgres) | - |
+| `DATABASE_HOST` | Host for Postgres. | ❌ | `127.0.0.1` |
+| `DATABASE_PORT` | Port for Postgres. | ❌ | `5432` |
+| `DB_PROVIDER_CONFIG` | Additional backend-specific configuration (e.g., Chroma index parameters). | ❌ | `{"hnsw": {"space": "cosine"}}` |
+| `ENABLE_OTEL` | Enable or disable OpenTelemetry tracing. | ❌ | `false` |
+| `OTEL_SERVICE_NAME` | Service name for telemetry traces. | ❌ | `memsrv` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Endpoint for sending trace data. | ❌ | `http://localhost:6006/v1/traces` |
+| `OTEL_EXPORTER_OTLP_HEADERS` | Additional headers for the OTLP exporter. | ❌ | - |
+</details>
 
 ## Using the service in your agent
 
@@ -118,6 +161,23 @@ See [examples/agents/adk/README.md](examples/agents/adk/README.md) for details o
 
 ### LangChain / LangGraph
 See [examples/agents/langchain/README.md](examples/agents/langchain/README.md) for details on integrating memory into agents built with LangChain or LangGraph, including both the **Callable Prompt** and **Agent Middleware** approaches.
+
+## Telemetry and Tracing
+
+Memsrv comes with built-in **OpenTelemetry (OTEL)** support for end-to-end tracing.
+
+When enabled, every key operation from **LLM calls**, **fact extraction**, **fact consolidation** and **memory storage** to **API requests** is automatically traced.  
+These traces can be exported to **any OTLP-compatible collector**, such as **Phoenix**, **Jeager**, **Grafana Tempo**, or **Honeycomb**.
+
+Enable it by setting:
+
+```bash
+ENABLE_OTEL=true
+OTEL_EXPORTER_OTLP_ENDPOINT=http://trace-collector-endpoint
+```
+To learn more about how tracing works and how to configure it, see [Telemetry and Tracing Guide](docs/Telemetry.md)
+
+Find some images of traces captured for `memsrv` here - [Memsrv Traces](docs/Telemetry.md#example-trace-outputs-for-memsrv).
 
 ## Directory Structure
 
@@ -159,6 +219,12 @@ See [examples/agents/langchain/README.md](examples/agents/langchain/README.md) f
             │   └── memory.py           # Data models for memories
             │   └── requests.py         # Data models for API requests
             │   └── response.py         # Data models for API responses
+            ├── telemetry/
+            │   └── __init__.py
+            │   └── constants.py        # Constant values for span attribute mapping
+            │   └── helpers.py          # Helpers functions for tracing specific funcs
+            │   └── setup.py            # Sets up tracer provider + exporters
+            │   └── tracing.py          # Core logic for tracing, span creation and decorators
             └── utils/
                 ├── factory.py          # Factory that constructs the individual services(llm, embd, db)
                 └── logger.py           # Common logger for all files
