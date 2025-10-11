@@ -57,7 +57,7 @@ class ChromaLiteDBAdapter(VectorDBAdapter):
                                              configuration=config)
 
         return True
-    
+
     @traced_span(kind=CustomSpanKinds.DB.value)
     async def add(self, items):
 

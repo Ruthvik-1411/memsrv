@@ -5,15 +5,14 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from memsrv.api.routes import memory
 from memsrv.core.memory_service import MemoryService
 from memsrv.utils.factory import LLMFactory, EmbeddingFactory, DBFactory, TelemetryFactory
 
 from memsrv.utils.logger import get_logger
-from memsrv.telemetry.setup import setup_tracer
 from memsrv.telemetry.tracing import init_tracer
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 load_dotenv()
 logger = get_logger(__name__)

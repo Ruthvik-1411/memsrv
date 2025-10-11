@@ -18,7 +18,7 @@ class GeminiEmbedding(BaseEmbedding):
     def __init__(self, config: Optional[BaseEmbeddingConfig]=None):
         super().__init__(config=config)
         self.client = geminiClient(api_key=self.config.api_key)
-    
+
     @traced_span(kind=CustomSpanKinds.EMBEDDING.value)
     async def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         """Generates embeddings for a list of texts using Gemini embedding models."""
@@ -34,9 +34,9 @@ class GeminiEmbedding(BaseEmbedding):
             )
             for embedding in result.embeddings:
                 embedding_result.append(embedding.values)
-            
+
             trace_embedder_call(provider=self.config.model_name)
-            
+
             return embedding_result
         except Exception as e:
             logger.error(f"An error occurred during embedding generation: {e}")

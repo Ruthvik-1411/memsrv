@@ -1,4 +1,5 @@
 """Enrich common spans using helpers"""
+# pylint: disable=too-many-positional-arguments
 from typing import Literal, List, Dict, Any
 from opentelemetry import trace
 from openinference.semconv.trace import SpanAttributes
@@ -34,7 +35,7 @@ def trace_llm_call(provider: str,
         }
     ]
     output_messages = [{"role": "model", "content": output_message}]
-    
+
     span.set_attributes({
         **get_llm_message_attributes(input_messages, "input"),
         **get_llm_message_attributes(output_messages, "output")
@@ -51,7 +52,7 @@ def trace_embedder_call(provider: str):
     span = trace.get_current_span()
     span.set_attribute(SpanAttributes.EMBEDDING_MODEL_NAME, provider)
     # NOTE: Can add EMBEDDING_EMBEDDINGS = ["embds": [],"text":[]] but not needed
-    
+
 def get_llm_message_attributes(messages: List[Dict[str, Any]],
                                message_type: Literal["input", "output"]) -> Dict[str, Any]:
     """

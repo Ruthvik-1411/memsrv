@@ -18,6 +18,7 @@ class CustomSpanNames(str, Enum):
     DELETE_MEMORIES_API = "[API] DeleteMemoriesAPI"
 
 class CustomSpanKinds(str, Enum):
+    """Custom span kinds used in memsrv, some common with OpenInference"""
     DB = "DB"
     HTTP = "HTTP"
     BACKGROUND = "BACKGROUND"

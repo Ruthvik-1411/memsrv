@@ -13,11 +13,11 @@ from .constants import COMMON_ATTRIBUTES
 logger = get_logger(__name__)
 
 # Global tracer reference (can be None)
-_tracer = None
+_tracer = None # pylint: disable=invalid-name
 
 def init_tracer(tracer):
     """Called once during app startup to set global tracer instance."""
-    global _tracer
+    global _tracer # pylint: disable=global-statement
     _tracer = tracer
 
 def get_tracer():
@@ -56,7 +56,7 @@ def traced_span(name: str = None,
                         }
                         span.set_attribute(SpanAttributes.INPUT_VALUE,
                                            safe_serialize(function_inputs))
-                    
+
                     result = await func(*args, **kwargs)
 
                     if record_io:
@@ -68,7 +68,7 @@ def traced_span(name: str = None,
                     span.set_status(Status(StatusCode.ERROR, str(e)))
                     span.record_exception(e)
 
-        func._is_traced = True
+        func._is_traced = True # pylint: disable=protected-access
         return async_wrapper
     return decorator
 
