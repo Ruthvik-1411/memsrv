@@ -22,7 +22,8 @@ def create_memory_router(memory_service: MemoryService):
             messages = request.messages
             metadata = request.metadata
             # We consolidate and store memories by default, pass False flag to skip consolidation
-            response = await memory_service.add_memories_from_conversation(messages, metadata)
+            response = await memory_service.add_memories_from_conversation(messages=messages,
+                                                                           metadata=metadata)
 
             return {
                 "message": f"Successfully added {len(response)} memories.",
@@ -54,7 +55,8 @@ def create_memory_router(memory_service: MemoryService):
 
             # We can get the collection name from params as well, but for future
 
-            memories = await memory_service.search_by_metadata(filters=filters, limit=limit)
+            memories = await memory_service.search_by_metadata(filters=filters,
+                                                               limit=limit)
             return GetMemoriesResponse(memories=memories)
         except Exception as e:
             logger.exception(f"An error has occured when searching memory: {str(e)}",

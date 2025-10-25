@@ -11,6 +11,7 @@ from memsrv.embeddings.base_config import BaseEmbeddingConfig
 from memsrv.embeddings.base_embedder import BaseEmbedding
 from memsrv.db.base_adapter import VectorDBAdapter
 from memsrv.core.memory_service import MemoryService
+from memsrv.telemetry.setup import setup_tracer
 
 def load_class(path: str) -> Type[Any]:
     """Dynamically import a class from a full path string"""
@@ -106,3 +107,11 @@ class MemoryServiceFactory:
             db_adapter=db_instance,
             embedder=embedder_instance,
         )
+
+class TelemetryFactory:
+    """Factory for initializing telemetry (OpenTelemetry)"""
+
+    @staticmethod
+    def create():
+        """Creates and returns a tracer if telemetry is enabled."""
+        return setup_tracer(memory_config)
