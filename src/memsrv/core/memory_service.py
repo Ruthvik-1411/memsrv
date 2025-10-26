@@ -12,6 +12,7 @@ from memsrv.models.request import MemoryCreateRequest, MemoryUpdateRequest
 from memsrv.models.response import ActionConfirmation, MemoryResponse
 
 from memsrv.utils.logger import get_logger
+from memsrv.utils.exceptions import InvalidRequestError
 from memsrv.telemetry.tracing import traced_span
 from memsrv.telemetry.constants import CustomSpanKinds, CustomSpanNames
 
@@ -63,12 +64,15 @@ class MemoryService:
                                              consolidation: bool = True) -> list[str]:
         """Extracts facts from conversations and adds them to vector DB"""
         parsed_messages = parse_messages(messages)
+
         if not parsed_messages.strip():
-            return []
+            raise InvalidRequestError("The provided list of messages was empty or invalid")
+
         facts = await extract_facts(parsed_messages=parsed_messages,
                                     llm=self.llm)
 
         if not facts:
+            logger.info("No facts extracted from conversation.")
             return []
 
         if consolidation:

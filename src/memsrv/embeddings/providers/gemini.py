@@ -6,10 +6,11 @@ from google.genai.types import EmbedContentConfig
 from memsrv.embeddings.base_embedder import BaseEmbedding
 from memsrv.embeddings.base_config import BaseEmbeddingConfig
 
-from memsrv.utils.logger import get_logger
 from memsrv.telemetry.constants import CustomSpanKinds
 from memsrv.telemetry.tracing import traced_span
 from memsrv.telemetry.helpers import trace_embedder_call
+from memsrv.utils.logger import get_logger
+from memsrv.utils.retry import retry_with_backoff, rate_limited
 
 logger = get_logger(__name__)
 
@@ -20,6 +21,8 @@ class GeminiEmbedding(BaseEmbedding):
         self.client = geminiClient(api_key=self.config.api_key)
 
     @traced_span(kind=CustomSpanKinds.EMBEDDING.value)
+    @rate_limited(calls_per_second=2.0)
+    @retry_with_backoff(max_retries=3, base_delay=1, max_delay=8)
     async def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         """Generates embeddings for a list of texts using Gemini embedding models."""
         try:

@@ -18,21 +18,21 @@ def create_memory_router(memory_service: MemoryService):
         """
         Extracts facts from a conversation and saves them with metadata.
         """
-        try:
-            messages = request.messages
-            metadata = request.metadata
-            # We consolidate and store memories by default, pass False flag to skip consolidation
-            response = await memory_service.add_memories_from_conversation(messages=messages,
-                                                                           metadata=metadata)
-
+        messages = request.messages
+        metadata = request.metadata
+        # We consolidate and store memories by default, pass False flag to skip consolidation
+        response = await memory_service.add_memories_from_conversation(messages=messages,
+                                                                       metadata=metadata)
+        if response:
             return {
                 "message": f"Successfully added {len(response)} memories.",
                 "info": response
             }
-        except Exception as e:
-            logger.exception(f"An error has occured when adding to memory: {str(e)}",
-                             exc_info=True)
-            raise HTTPException(status_code=500, detail=str(e)) from e
+
+        return {
+            "message": "No new memories were generated from the conversation.",
+            "info": []
+        }
 
     @router.get("/memories", response_model=GetMemoriesResponse)
     async def retrieve_memories_by_metadata(

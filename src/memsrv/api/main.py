@@ -12,6 +12,7 @@ from memsrv.core.memory_service import MemoryService
 from memsrv.utils.factory import LLMFactory, EmbeddingFactory, DBFactory, TelemetryFactory
 
 from memsrv.utils.logger import get_logger
+from memsrv.utils.exceptions import add_exception_handlers
 from memsrv.telemetry.tracing import init_tracer
 
 load_dotenv()
@@ -90,3 +91,5 @@ async def add_process_time_header(request: Request, call_next):
     response.headers["X-Process-Time"] = str(process_time)
 
     return response
+
+add_exception_handlers(app)
