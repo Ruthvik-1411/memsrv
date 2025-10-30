@@ -39,7 +39,18 @@ This design is inspired by [VertexAI Memory Bank](https://cloud.google.com/verte
 
 ## Why Memsrv?
 
-Most LLM frameworks forget previous context after each session. **Memsrv** adds a persistent, queryable memory layer that allows your AI agents to "recall" information and behave more consistently over time, without relying on proprietary hosted memory solutions. This project aims to provide a fully configurable boilerplate supporting various backend components, allowing developers to build and enhance as they need.
+Most LLM frameworks forget previous context after each session. **Memsrv** adds a persistent, queryable memory layer that allows your AI agents to "recall" information and behave more consistently over time, without relying on proprietary hosted memory solutions.
+
+So, why use Memsrv?
+
+> Honestly, there's no particular reason if you're looking for a production-grade, enterprise-ready solution. There are mature and well-supported options like mem0, Zep, LangMem, Agno, SuperMemory, or VertexAI MemoryBank, offering advanced features such as knowledge graphs, robust security, and scalable infrastructure.
+
+Use Memsrv if you want:
+- A **fully configurable, self-hosted, and transparent boilerplate** to understand how an LLM memory layer works end-to-end.
+- A platform that's easy to extend, customize, and experiment with different components (LLMs, embedding models, vector DBs, etc.).
+- A base project to learn from, contribute to, or build upon for your own agentic systems.
+
+Memsrv is an open and evolving project built in my spare time, for developers - focused on clarity, extensibility, and hands-on understanding of how memory services for LLMs can be designed.
 
 ## High level architecture and Flow
 <img src="assets/memsrv_arch.png" alt="memsrv architecture diagram">
