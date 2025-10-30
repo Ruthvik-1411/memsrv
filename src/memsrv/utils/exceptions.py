@@ -1,4 +1,5 @@
 """Custom exception classes for the Memory Service."""
+from typing import Optional
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from memsrv.utils.logger import get_logger
@@ -42,15 +43,14 @@ class ConfigurationError(MemoryServiceError):
 
 class APIError(MemoryServiceError):
     """Raised when there's an error interacting with the API."""
-    def __init__(self, message: str):
-        super().__init__(message, status_code=503, error_code="API_SERVICE_UNAVAILABLE")
+    def __init__(self, message: str, error_code: Optional[str] = "API_SERVICE_UNAVAILABLE"):
+        super().__init__(message, status_code=503, error_code=error_code)
 
 class RetryableAPIError(APIError):
     """A specific API error that indicates the operation can be retried."""
     def __init__(self, message: str):
         super().__init__(
             message,
-            status_code=503,
             error_code="API_SERVICE_TEMPORARILY_UNAVAILABLE"
         )
 
