@@ -34,7 +34,7 @@ def retry_with_backoff(max_retries: int = 5,
         async def _wrapper(*args, **kwargs):
             attempt = 0
             delay = base_delay
-            
+
             for attempt in range(1, max_retries + 1):
                 try:
                     return await func(*args, **kwargs)
@@ -46,7 +46,7 @@ def retry_with_backoff(max_retries: int = 5,
                     sleep_time = min(delay, max_delay)
                     # We are using jitter so that concurrent tasks will not retry at same time
                     # We can not use this, but for distributed components, this helps
-                    sleep_time = sleep_time * (0.5 + random.random() / 2)  
+                    sleep_time = sleep_time * (0.5 + random.random() / 2)
 
                     logger.warning(
                         f"[Retry]: {func.__name__} failed on attempt {attempt},"

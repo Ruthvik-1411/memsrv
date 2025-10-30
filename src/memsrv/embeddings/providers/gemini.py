@@ -49,10 +49,15 @@ class GeminiEmbedding(BaseEmbedding):
             return embedding_result
         except GeminiAPIError as e:
             # https://ai.google.dev/gemini-api/docs/troubleshooting
-            logger.warning(f"Gemini API call failed with status '{e.status}'. Translating to custom exception.")
+            logger.warning(
+                f"Gemini API call failed with status '{e.status}'."
+                "Translating to custom exception."
+            )
 
             if getattr(e, 'status', None) == "PERMISSION_DENIED":
-                raise ConfigurationError(f"Gemini API permission denied. Check the config. {e.message}") from e
+                raise ConfigurationError(
+                    f"Gemini API permission denied. Check the config. {e.message}"
+                ) from e
 
             if getattr(e, 'status', None) in ["INVALID_ARGUMENT", "NOT_FOUND"]:
                 raise ConfigurationError(f"Invalid argument sent to Gemini API. {e.message}") from e
