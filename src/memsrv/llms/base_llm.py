@@ -19,6 +19,6 @@ class BaseLLM(ABC):
     @abstractmethod
     async def generate_response(self, message: str,
                                 system_instruction: str=None,
-                                response_format=None):
+                                response_format=None) -> str:
         """Generates a response from the model"""
         pass

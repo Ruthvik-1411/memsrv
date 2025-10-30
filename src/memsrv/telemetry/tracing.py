@@ -67,6 +67,7 @@ def traced_span(name: str = None,
                 except Exception as e:
                     span.set_status(Status(StatusCode.ERROR, str(e)))
                     span.record_exception(e)
+                    raise
 
         func._is_traced = True # pylint: disable=protected-access
         return async_wrapper

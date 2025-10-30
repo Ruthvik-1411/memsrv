@@ -1,12 +1,16 @@
 """Embeddings generator using google embeds"""
 from typing import List, Optional
 from google.genai.client import Client as geminiClient
+from google.genai.errors import APIError as GeminiAPIError
 from google.genai.types import EmbedContentConfig
 
 from memsrv.embeddings.base_embedder import BaseEmbedding
 from memsrv.embeddings.base_config import BaseEmbeddingConfig
 
 from memsrv.utils.logger import get_logger
+from memsrv.utils.retry import retry_with_backoff, rate_limited
+from memsrv.utils.exceptions import APIError, RetryableAPIError, ConfigurationError
+
 from memsrv.telemetry.constants import CustomSpanKinds
 from memsrv.telemetry.tracing import traced_span
 from memsrv.telemetry.helpers import trace_embedder_call
@@ -20,6 +24,11 @@ class GeminiEmbedding(BaseEmbedding):
         self.client = geminiClient(api_key=self.config.api_key)
 
     @traced_span(kind=CustomSpanKinds.EMBEDDING.value)
+    @rate_limited(calls_per_second=2.0)
+    @retry_with_backoff(max_retries=3,
+                        base_delay=1,
+                        max_delay=8,
+                        retry_on_exceptions=(RetryableAPIError,))
     async def generate_embeddings(self, texts: List[str]) -> List[List[float]]:
         """Generates embeddings for a list of texts using Gemini embedding models."""
         try:
@@ -38,6 +47,24 @@ class GeminiEmbedding(BaseEmbedding):
             trace_embedder_call(provider=self.config.model_name)
 
             return embedding_result
-        except Exception as e:
-            logger.error(f"An error occurred during embedding generation: {e}")
-            return [[] for _ in texts]
+        except GeminiAPIError as e:
+            # https://ai.google.dev/gemini-api/docs/troubleshooting
+            logger.warning(
+                f"Gemini API call failed with status '{e.status}'."
+                "Translating to custom exception."
+            )
+
+            if getattr(e, 'status', None) == "PERMISSION_DENIED":
+                raise ConfigurationError(
+                    f"Gemini API permission denied. Check the config. {e.message}"
+                ) from e
+
+            if getattr(e, 'status', None) in ["INVALID_ARGUMENT", "NOT_FOUND"]:
+                raise ConfigurationError(f"Invalid argument sent to Gemini API. {e.message}") from e
+
+            if getattr(e, 'status', None) in ["RESOURCE_EXHAUSTED", "UNAVAILABLE", "INTERNAL"]:
+                raise RetryableAPIError(
+                    f"Gemini API is temporarily unavailable ({e.status}). {e.message}"
+                ) from e
+
+            raise APIError(f"Unexpected Gemini API error occurred ({e.status}),{e.message}") from e
